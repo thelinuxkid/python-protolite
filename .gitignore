@@ -33,6 +33,7 @@ pip-log.txt
 #Virtualenv
 .virtual
 .virt
+.v
 
 #Ropemacs
 .ropeproject
