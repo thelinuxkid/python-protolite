@@ -3,6 +3,11 @@ from setuptools import setup, find_packages
 import os
 
 EXTRAS_REQUIRES = dict(
+    parser=[
+        # runtime version must match version of jar used to create the parser
+        # and lexer
+        'antlr_python_runtime==3.1.3',
+    ],
     test=[
         'nose>=1.3.0',
         ],
@@ -25,7 +30,7 @@ with open(path) as fp:
 
 setup(
     name='protolite',
-    version='0.0.0.1',
+    version='0.0.1',
     description=(
         "Lightweight implementation of Google's Protocol Buffers in Python",
     ),
@@ -41,6 +46,11 @@ setup(
     install_requires=[
         'setuptools',
         ],
+    entry_points={
+        'console_scripts': [
+            'protoslim-generate = protolite.cli.generate:main[parser]',
+        ],
+    },
     extras_require=EXTRAS_REQUIRES,
     classifiers=[
         'Development Status :: 4 - Beta',
