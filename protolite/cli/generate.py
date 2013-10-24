@@ -61,6 +61,11 @@ def to_underscore(camel, prefix=None):
 
 
 def _proto_dict(tree, prefix=None):
+    def _literal(children):
+        name = children.pop(0)
+        name = to_underscore(name.getText(), prefix=prefix)
+        return name, dict(children)
+
     if tree is None or tree.getType() in ignore_types:
         return None
 
@@ -78,10 +83,13 @@ def _proto_dict(tree, prefix=None):
     if tree.getType() == proto_parser.PROTO:
         return OrderedDict(children)
 
-    if tree.getType() in [proto_parser.MESSAGE_LITERAL, proto_parser.ENUM_LITERAL]:
-        name = children.pop(0)
-        name = to_underscore(name.getText(), prefix=prefix)
-        return name, dict(children)
+    if tree.getType() == proto_parser.MESSAGE_LITERAL:
+        return _literal(children)
+
+    if tree.getType() == proto_parser.ENUM_LITERAL:
+        name, children = _literal(children)
+        children['type'] = 'enum_definition'
+        return name, children
 
     if tree.getType() == proto_parser.MESSAGE_FIELD:
         scope, field_type, field_name, field_number = children
@@ -112,17 +120,34 @@ def proto_dict(tree, prefix=None):
     for name, fields in proto.items():
         for field, info in fields.items():
             # TODO this probably isn't safe
-            if not('type' in info or 'name' in info):
-                # enum
+            if info['type'] == 'enum_definition':
                 del fields[field]
-                # enums must be show up first
+                # enum definitions must show up first
                 temp = OrderedDict([
                     (field, info),
                 ])
                 temp.update(proto)
                 temp.update(decoding)
                 decoding = temp
-    return decoding
+
+    encoding = OrderedDict()
+    for name, fields in decoding.items():
+        _fields = dict()
+        _type = fields.pop('type', None)
+        for field, info in fields.items():
+            if _type == 'enum_definition':
+                _fields[info] = field
+                continue
+            _info = dict([
+                ('type', info['type']),
+                ('field', field),
+            ])
+            if info.get('message'):
+                _info['message'] = info['message']
+            _fields[info['name']] = _info
+        encoding[name] = _fields
+
+    return decoding, encoding
 
 
 def root_rule(proto):
@@ -164,7 +189,7 @@ def create_proto(protos, output, prefix):
     for proto in protos_order(protos):
         log.info('Processing {proto}'.format(proto=proto))
         root = root_rule(proto)
-        decoding = proto_dict(root, prefix)
+        decoding, encoding = proto_dict(root, prefix)
         proto_json = ProtoJSON(indent=8, separators=(',', ': '))
         path = os.path.basename(proto)
         path, _ = os.path.splitext(path)
@@ -173,6 +198,13 @@ def create_proto(protos, output, prefix):
         with open(path, 'w') as fp:
             fp.write('class decoding(object):')
             for name, value in decoding.items():
+                value = ''.join(proto_json.iterencode(value))
+                fp.write(
+                    '\n    {name} = {value}'.format(name=name, value=value),
+                )
+        with open(path, 'a') as fp:
+            fp.write('\n\nclass encoding(object):')
+            for name, value in encoding.items():
                 value = ''.join(proto_json.iterencode(value))
                 fp.write(
                     '\n    {name} = {value}'.format(name=name, value=value),
