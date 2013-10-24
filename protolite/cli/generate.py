@@ -5,7 +5,7 @@ import argparse
 import logging
 import itertools
 
-from collections import OrderedDict, deque, defaultdict
+from collections import defaultdict
 
 from antlr3 import ANTLRFileStream, CommonTokenStream
 
@@ -55,12 +55,14 @@ def root_rule(proto):
     return rule.tree
 
 
-def _parse(tree, prefix=None):
-    def _literal(children):
-        name = children.pop(0)
-        name = underscore(name.getText(), prefix=prefix)
-        return name, dict(children)
+def output_path(proto, output):
+    path = os.path.basename(proto)
+    path, _ = os.path.splitext(path)
+    path += '.py'
+    return os.path.join(output, path)
 
+
+def _parse(tree, prefix=None):
     if tree is None or tree.getType() in ignore_types:
         return None
 
@@ -78,13 +80,10 @@ def _parse(tree, prefix=None):
     if tree.getType() == proto_parser.PROTO:
         return dict(children)
 
-    if tree.getType() == proto_parser.MESSAGE_LITERAL:
-        return _literal(children)
-
-    if tree.getType() == proto_parser.ENUM_LITERAL:
-        name, children = _literal(children)
-        children['type'] = 'enum_definition'
-        return name, children
+    if tree.getType() in [proto_parser.MESSAGE_LITERAL, proto_parser.ENUM_LITERAL]:
+        name = children.pop(0)
+        name = underscore(name.getText(), prefix=prefix)
+        return name, dict(children)
 
     if tree.getType() == proto_parser.MESSAGE_FIELD:
         scope, field_type, field_name, field_number = children
@@ -111,33 +110,36 @@ def _parse(tree, prefix=None):
 
 def parse(tree, prefix=None):
     proto = _parse(tree, prefix=prefix)
-    decoding = deque()
+    decoding = dict()
     dec_messages = defaultdict(dict)
     enc_messages = defaultdict(dict)
-    # enum definitions at the top
     for name, fields in proto.items():
         for field, info in fields.items():
-            # TODO this probably isn't safe
-            if info['type'] == 'enum_definition':
-                del fields[field]
-                decoding.appendleft((field, info))
-            if info['type'] in ['embedded', 'repeated']:
+            if info.get('type') in ['embedded', 'repeated']:
                 message = info.pop('message')
+                if message in fields:
+                    # enum
+                    message = '{name}["{message}"]'.format(
+                        name=name,
+                        message=message,
+                    )
+                    info['type'] = 'enum'
                 dec_messages[name][field] = message
                 enc_messages[name][info['name']] = message
-            decoding.append((name, fields))
-    decoding = OrderedDict(decoding)
+            decoding[name] = fields
 
-    encoding = OrderedDict()
+    encoding = dict()
     for name, fields in decoding.items():
         _fields = dict()
-        _type = fields.pop('type', None)
         for field, info in fields.items():
-            if _type == 'enum_definition':
-                _fields[info] = field
+            _type = info.get('type')
+            if not _type:
+                # enum definition
+                _info = dict([(v,k) for k,v in info.items()])
+                _fields[field] = _info
                 continue
             _info = dict([
-                ('type', info['type']),
+                ('type', _type),
                 ('field', field),
             ])
             _fields[info['name']] = _info
@@ -173,15 +175,12 @@ def order(protos):
 
 
 def create(protos, output, prefix):
+    proto_json = ProtoJSON(indent=8, separators=(',', ': '))
     for proto in order(protos):
         log.info('Processing {proto}'.format(proto=proto))
         root = root_rule(proto)
         decoding, dec_messages, encoding, enc_messages = parse(root, prefix)
-        proto_json = ProtoJSON(indent=8, separators=(',', ': '))
-        path = os.path.basename(proto)
-        path, _ = os.path.splitext(path)
-        path += '.py'
-        path = os.path.join(output, path)
+        path = output_path(proto, output)
         with open(path, 'w') as fp:
             fp.write('class decoding(object):')
             for name, value in decoding.items():
