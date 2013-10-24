@@ -126,7 +126,7 @@ def parse(tree, prefix=None):
                     info['type'] = 'enum'
                 dec_messages[name][field] = message
                 enc_messages[name][info['name']] = message
-            decoding[name] = fields
+        decoding[name] = fields
 
     encoding = dict()
     for name, fields in decoding.items():
@@ -174,16 +174,48 @@ def order(protos):
         yield proto
 
 
+def write_references(fp, coding, messages, fields, imports):
+    fp.write('\n')
+    for name, _fields in messages.items():
+        for field, message in _fields.items():
+            _message = message.rsplit('[')
+            _message = _message[0]
+            depend = ''
+            if not _message in fields:
+                for module, __fields in imports.items():
+                    if _message in __fields:
+                        depend = module + '.'
+                        break
+                if not depend:
+                    raise ValueError(
+                        'attribute is not in any module: {_message}'.format(
+                            _message=_message,
+                        )
+                    )
+            if coding == 'encoding':
+                field = '"{field}"'.format(field=field)
+            fp.write(
+                '\n{coding}.{name}[{field}]["message"] = '
+                '{depend}{coding}.{message}'.format(
+                    coding=coding,
+                    depend=depend,
+                    name=name,
+                    field=field,
+                    message=message,
+                ),
+            )
+
+
 def create(protos, output, prefix):
     proto_json = ProtoJSON(indent=8, separators=(',', ': '))
-    imports = []
+    imports = dict()
     for proto in order(protos):
         log.info('Processing {proto}'.format(proto=proto))
         root = root_rule(proto)
         decoding, dec_messages, encoding, enc_messages = parse(root, prefix)
         module, path = output_info(proto, output)
         with open(path, 'w') as fp:
-            for _import in imports:
+            for _import in imports.keys():
                 fp.write('import {_import}\n'.format(_import=_import))
             fp.write('\nclass decoding(object):')
             for name, value in decoding.items():
@@ -191,16 +223,13 @@ def create(protos, output, prefix):
                 fp.write(
                     '\n    {name} = {value}'.format(name=name, value=value),
                 )
-            for name, fields in dec_messages.items():
-                for field, info in fields.items():
-                    fp.write(
-                        '\ndecoding.{name}[{field}]["message"] = '
-                        'decoding.{info}'.format(
-                            name=name,
-                            field=field,
-                            info=info.strip('"'),
-                        ),
-                    )
+            write_references(
+                fp,
+                'decoding',
+                dec_messages,
+                decoding.keys(),
+                imports,
+            )
         with open(path, 'a') as fp:
             fp.write('\n\nclass encoding(object):')
             for name, value in encoding.items():
@@ -208,17 +237,16 @@ def create(protos, output, prefix):
                 fp.write(
                     '\n    {name} = {value}'.format(name=name, value=value),
                 )
-            for name, fields in enc_messages.items():
-                for field, info in fields.items():
-                    fp.write(
-                        '\nencoding.{name}["{field}"]["message"] = '
-                        'encoding.{info}'.format(
-                            name=name,
-                            field=field,
-                            info=info.strip('"'),
-                        ),
-                    )
-        imports.append(module)
+            write_references(
+                fp,
+                'encoding',
+                enc_messages,
+                encoding.keys(),
+                imports,
+            )
+            fp.write('\n')
+        imports[module] = decoding.keys()
+
 
 def parse_args():
     parser = argparse.ArgumentParser(
