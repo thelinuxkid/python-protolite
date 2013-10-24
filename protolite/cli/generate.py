@@ -24,13 +24,12 @@ ignore_types = [
 class ProtoJSON(json.JSONEncoder):
     def iterencode(self, obj):
         data = json.JSONEncoder.iterencode(self, obj)
-        values = []
         for value in data:
             stripped = value.strip('"')
             if stripped.isdigit():
                 value = stripped
-            values.append(value)
-        return values
+            yield value
+
 
 def abs_path(path):
   path = os.path.expanduser(path)
@@ -38,7 +37,7 @@ def abs_path(path):
   return path
 
 
-def to_underscore(camel, prefix=None):
+def underscore(camel, prefix=None):
     if prefix is not None:
         if camel.startswith(prefix):
             camel = camel[len(prefix):]
@@ -47,10 +46,19 @@ def to_underscore(camel, prefix=None):
     return under
 
 
-def _proto_dict(tree, prefix=None):
+def root_rule(proto):
+    stream = ANTLRFileStream(proto)
+    lexer = proto_lexer.proto_lexer(stream)
+    tokens = CommonTokenStream(lexer)
+    parser = proto_parser.proto_parser(tokens)
+    rule = parser.proto()
+    return rule.tree
+
+
+def _parse(tree, prefix=None):
     def _literal(children):
         name = children.pop(0)
-        name = to_underscore(name.getText(), prefix=prefix)
+        name = underscore(name.getText(), prefix=prefix)
         return name, dict(children)
 
     if tree is None or tree.getType() in ignore_types:
@@ -62,7 +70,7 @@ def _proto_dict(tree, prefix=None):
 
     children =[]
     for child in tree.getChildren():
-        _child = _proto_dict(child, prefix)
+        _child = _parse(child, prefix)
         if _child:
             children.append(_child)
 
@@ -81,28 +89,28 @@ def _proto_dict(tree, prefix=None):
     if tree.getType() == proto_parser.MESSAGE_FIELD:
         scope, field_type, field_name, field_number = children
         fields = dict()
-        fields['type'] = to_underscore(field_type.getText(), prefix=prefix)
+        fields['type'] = underscore(field_type.getText(), prefix=prefix)
         if field_type.getType() == proto_parser.IDENTIFIER:
             # enum ,embedded or repeated
             fields['message'] = fields['type']
             fields['type'] = 'embedded'
             if scope.getText() == 'repeated':
                 fields['type'] = 'repeated'
-        fields['name'] = to_underscore(field_name.getText(), prefix=prefix)
+        fields['name'] = underscore(field_name.getText(), prefix=prefix)
         field_number = int(field_number.getText())
         return field_number, fields
 
     if tree.getType() == proto_parser.ENUM_FIELD:
         enum_name, enum_number = children
-        enum_name = to_underscore(enum_name.getText(), prefix=prefix)
+        enum_name = underscore(enum_name.getText(), prefix=prefix)
         enum_number = int(enum_number.getText())
         return enum_number, enum_name
 
     return tree
 
 
-def proto_dict(tree, prefix=None):
-    proto = _proto_dict(tree, prefix=prefix)
+def parse(tree, prefix=None):
+    proto = _parse(tree, prefix=prefix)
     decoding = deque()
     dec_messages = defaultdict(dict)
     enc_messages = defaultdict(dict)
@@ -138,16 +146,7 @@ def proto_dict(tree, prefix=None):
     return decoding, dec_messages, encoding, enc_messages
 
 
-def root_rule(proto):
-    stream = ANTLRFileStream(proto)
-    lexer = proto_lexer.proto_lexer(stream)
-    tokens = CommonTokenStream(lexer)
-    parser = proto_parser.proto_parser(tokens)
-    rule = parser.proto()
-    return rule.tree
-
-
-def proto_order(proto):
+def _order(proto):
     _dir = os.path.dirname(proto)
     root = root_rule(proto)
     for child in root.getChildren():
@@ -156,15 +155,15 @@ def proto_order(proto):
             depend = depend.getText().strip('"')
             depend = os.path.join(_dir, depend)
             depend = abs_path(depend)
-            for depend in proto_order(depend):
+            for depend in _order(depend):
                 yield depend
     yield proto
 
 
-def protos_order(protos):
+def order(protos):
     done = []
     for proto in protos:
-        for depend in proto_order(proto):
+        for depend in _order(proto):
             if any([os.path.samefile(d, depend) for d in done]):
                 continue
             yield depend
@@ -173,11 +172,11 @@ def protos_order(protos):
         yield proto
 
 
-def create_proto(protos, output, prefix):
-    for proto in protos_order(protos):
+def create(protos, output, prefix):
+    for proto in order(protos):
         log.info('Processing {proto}'.format(proto=proto))
         root = root_rule(proto)
-        decoding, dec_messages, encoding, enc_messages = proto_dict(root, prefix)
+        decoding, dec_messages, encoding, enc_messages = parse(root, prefix)
         proto_json = ProtoJSON(indent=8, separators=(',', ': '))
         path = os.path.basename(proto)
         path, _ = os.path.splitext(path)
@@ -265,4 +264,4 @@ def main():
     protos = itertools.chain(*args.protos)
     protos = [abs_path(proto) for proto in protos]
     output = abs_path(args.output)
-    create_proto(protos, output, args.prefix)
+    create(protos, output, args.prefix)
