@@ -55,11 +55,11 @@ def root_rule(proto):
     return rule.tree
 
 
-def output_path(proto, output):
+def output_info(proto, output):
     path = os.path.basename(proto)
-    path, _ = os.path.splitext(path)
-    path += '.py'
-    return os.path.join(output, path)
+    module, _ = os.path.splitext(path)
+    path = module + '.py'
+    return module, os.path.join(output, path)
 
 
 def _parse(tree, prefix=None):
@@ -176,13 +176,16 @@ def order(protos):
 
 def create(protos, output, prefix):
     proto_json = ProtoJSON(indent=8, separators=(',', ': '))
+    imports = []
     for proto in order(protos):
         log.info('Processing {proto}'.format(proto=proto))
         root = root_rule(proto)
         decoding, dec_messages, encoding, enc_messages = parse(root, prefix)
-        path = output_path(proto, output)
+        module, path = output_info(proto, output)
         with open(path, 'w') as fp:
-            fp.write('class decoding(object):')
+            for _import in imports:
+                fp.write('import {_import}\n'.format(_import=_import))
+            fp.write('\nclass decoding(object):')
             for name, value in decoding.items():
                 value = ''.join(proto_json.iterencode(value))
                 fp.write(
@@ -195,8 +198,8 @@ def create(protos, output, prefix):
                         'decoding.{info}'.format(
                             name=name,
                             field=field,
-                            info=info.strip('"'))
-                        ,
+                            info=info.strip('"'),
+                        ),
                     )
         with open(path, 'a') as fp:
             fp.write('\n\nclass encoding(object):')
@@ -212,10 +215,10 @@ def create(protos, output, prefix):
                         'encoding.{info}'.format(
                             name=name,
                             field=field,
-                            info=info.strip('"'))
-                        ,
+                            info=info.strip('"'),
+                        ),
                     )
-
+        imports.append(module)
 
 def parse_args():
     parser = argparse.ArgumentParser(
