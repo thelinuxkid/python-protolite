@@ -48,7 +48,7 @@ setup(
         ],
     entry_points={
         'console_scripts': [
-            'protoslim-generate = protolite.cli.generate:main[parser]',
+            'protolite-generate = protolite.cli.generate:main[parser]',
         ],
     },
     extras_require=EXTRAS_REQUIRES,
