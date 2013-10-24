@@ -5,7 +5,7 @@ import argparse
 import logging
 import itertools
 
-from collections import OrderedDict
+from collections import OrderedDict, deque, defaultdict
 
 from antlr3 import ANTLRFileStream, CommonTokenStream
 
@@ -23,27 +23,14 @@ ignore_types = [
 
 class ProtoJSON(json.JSONEncoder):
     def iterencode(self, obj):
-        data = list(json.JSONEncoder.iterencode(self, obj))
-        result = []
-        index = 0
-        length = len(data)
-        while index < length:
-            value = data[index]
+        data = json.JSONEncoder.iterencode(self, obj)
+        values = []
+        for value in data:
             stripped = value.strip('"')
-            if stripped == 'message' and data[index+1] == ': ':
-                # TODO this isn't safe
-                # enum, embedded, repeated
-                result.append(value)
-                result.append(data[index+1])
-                result.append(data[index+2].strip('"'))
-                index += 3
-                continue
             if stripped.isdigit():
                 value = stripped
-            result.append(value)
-            index += 1
-        return result
-
+            values.append(value)
+        return values
 
 def abs_path(path):
   path = os.path.expanduser(path)
@@ -81,7 +68,7 @@ def _proto_dict(tree, prefix=None):
 
     # top-level
     if tree.getType() == proto_parser.PROTO:
-        return OrderedDict(children)
+        return dict(children)
 
     if tree.getType() == proto_parser.MESSAGE_LITERAL:
         return _literal(children)
@@ -116,19 +103,22 @@ def _proto_dict(tree, prefix=None):
 
 def proto_dict(tree, prefix=None):
     proto = _proto_dict(tree, prefix=prefix)
-    decoding = OrderedDict()
+    decoding = deque()
+    dec_messages = defaultdict(dict)
+    enc_messages = defaultdict(dict)
+    # enum definitions at the top
     for name, fields in proto.items():
         for field, info in fields.items():
             # TODO this probably isn't safe
             if info['type'] == 'enum_definition':
                 del fields[field]
-                # enum definitions must show up first
-                temp = OrderedDict([
-                    (field, info),
-                ])
-                temp.update(proto)
-                temp.update(decoding)
-                decoding = temp
+                decoding.appendleft((field, info))
+            if info['type'] in ['embedded', 'repeated']:
+                message = info.pop('message')
+                dec_messages[name][field] = message
+                enc_messages[name][info['name']] = message
+            decoding.append((name, fields))
+    decoding = OrderedDict(decoding)
 
     encoding = OrderedDict()
     for name, fields in decoding.items():
@@ -142,12 +132,10 @@ def proto_dict(tree, prefix=None):
                 ('type', info['type']),
                 ('field', field),
             ])
-            if info.get('message'):
-                _info['message'] = info['message']
             _fields[info['name']] = _info
         encoding[name] = _fields
 
-    return decoding, encoding
+    return decoding, dec_messages, encoding, enc_messages
 
 
 def root_rule(proto):
@@ -189,7 +177,7 @@ def create_proto(protos, output, prefix):
     for proto in protos_order(protos):
         log.info('Processing {proto}'.format(proto=proto))
         root = root_rule(proto)
-        decoding, encoding = proto_dict(root, prefix)
+        decoding, dec_messages, encoding, enc_messages = proto_dict(root, prefix)
         proto_json = ProtoJSON(indent=8, separators=(',', ': '))
         path = os.path.basename(proto)
         path, _ = os.path.splitext(path)
@@ -202,6 +190,16 @@ def create_proto(protos, output, prefix):
                 fp.write(
                     '\n    {name} = {value}'.format(name=name, value=value),
                 )
+            for name, fields in dec_messages.items():
+                for field, info in fields.items():
+                    fp.write(
+                        '\ndecoding.{name}[{field}]["message"] = '
+                        'decoding.{info}'.format(
+                            name=name,
+                            field=field,
+                            info=info.strip('"'))
+                        ,
+                    )
         with open(path, 'a') as fp:
             fp.write('\n\nclass encoding(object):')
             for name, value in encoding.items():
@@ -209,6 +207,16 @@ def create_proto(protos, output, prefix):
                 fp.write(
                     '\n    {name} = {value}'.format(name=name, value=value),
                 )
+            for name, fields in enc_messages.items():
+                for field, info in fields.items():
+                    fp.write(
+                        '\nencoding.{name}["{field}"]["message"] = '
+                        'encoding.{info}'.format(
+                            name=name,
+                            field=field,
+                            info=info.strip('"'))
+                        ,
+                    )
 
 
 def parse_args():
