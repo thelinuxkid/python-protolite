@@ -1,10 +1,13 @@
+import json
 import os
 import re
 import argparse
 import logging
 import itertools
 
-import antlr3
+from collections import OrderedDict
+
+from antlr3 import ANTLRFileStream, CommonTokenStream
 
 from protolite.parse import proto_parser
 from protolite.parse import proto_lexer
@@ -16,6 +19,30 @@ ignore_types = [
     proto_parser.OPTION_LITERAL,
     proto_parser.IMPORT_LITERAL,
 ]
+
+
+class ProtoJSON(json.JSONEncoder):
+    def iterencode(self, obj):
+        data = list(json.JSONEncoder.iterencode(self, obj))
+        result = []
+        index = 0
+        length = len(data)
+        while index < length:
+            value = data[index]
+            stripped = value.strip('"')
+            if stripped == 'message' and data[index+1] == ': ':
+                # TODO this isn't safe
+                # enum, embedded, repeated
+                result.append(value)
+                result.append(data[index+1])
+                result.append(data[index+2].strip('"'))
+                index += 3
+                continue
+            if stripped.isdigit():
+                value = stripped
+            result.append(value)
+            index += 1
+        return result
 
 
 def abs_path(path):
@@ -33,7 +60,7 @@ def to_underscore(camel, prefix=None):
     return under
 
 
-def proto_dict(tree, prefix=None):
+def _proto_dict(tree, prefix=None):
     if tree is None or tree.getType() in ignore_types:
         return None
 
@@ -43,13 +70,13 @@ def proto_dict(tree, prefix=None):
 
     children =[]
     for child in tree.getChildren():
-        _child = proto_dict(child, prefix)
+        _child = _proto_dict(child, prefix)
         if _child:
             children.append(_child)
 
     # top-level
     if tree.getType() == proto_parser.PROTO:
-        return dict(children)
+        return OrderedDict(children)
 
     if tree.getType() in [proto_parser.MESSAGE_LITERAL, proto_parser.ENUM_LITERAL]:
         name = children.pop(0)
@@ -57,44 +84,64 @@ def proto_dict(tree, prefix=None):
         return name, dict(children)
 
     if tree.getType() == proto_parser.MESSAGE_FIELD:
-        # TODO scope = children[0]['text']
-        # TODO if field_type.getType() == ProtoParser.IDENTIFIER:
-        _, field_type, field_name, field_number = children
-        field_type = to_underscore(field_type.getText(), prefix=prefix)
-        field_name = to_underscore(field_name.getText(), prefix=prefix)
-        field_number = field_number.getText()
-        fields = dict([
-            ('type', field_type),
-            ('name', field_name),
-        ])
+        scope, field_type, field_name, field_number = children
+        fields = dict()
+        fields['type'] = to_underscore(field_type.getText(), prefix=prefix)
+        if field_type.getType() == proto_parser.IDENTIFIER:
+            # enum ,embedded or repeated
+            fields['message'] = fields['type']
+            fields['type'] = 'embedded'
+            if scope.getText() == 'repeated':
+                fields['type'] = 'repeated'
+        fields['name'] = to_underscore(field_name.getText(), prefix=prefix)
+        field_number = int(field_number.getText())
         return field_number, fields
 
     if tree.getType() == proto_parser.ENUM_FIELD:
         enum_name, enum_number = children
         enum_name = to_underscore(enum_name.getText(), prefix=prefix)
-        enum_number = enum_number.getText()
+        enum_number = int(enum_number.getText())
         return enum_number, enum_name
 
     return tree
 
 
+def proto_dict(tree, prefix=None):
+    proto = _proto_dict(tree, prefix=prefix)
+    decoding = OrderedDict()
+    for name, fields in proto.items():
+        for field, info in fields.items():
+            # TODO this probably isn't safe
+            if not('type' in info or 'name' in info):
+                # enum
+                del fields[field]
+                # enums must be show up first
+                temp = OrderedDict([
+                    (field, info),
+                ])
+                temp.update(proto)
+                temp.update(decoding)
+                decoding = temp
+    return decoding
+
+
 def root_rule(proto):
-    stream = antlr3.ANTLRFileStream(proto)
+    stream = ANTLRFileStream(proto)
     lexer = proto_lexer.proto_lexer(stream)
-    tokens = antlr3.CommonTokenStream(lexer)
+    tokens = CommonTokenStream(lexer)
     parser = proto_parser.proto_parser(tokens)
     rule = parser.proto()
     return rule.tree
 
 
 def proto_order(proto):
-    dir = os.path.dirname(proto)
+    _dir = os.path.dirname(proto)
     root = root_rule(proto)
     for child in root.getChildren():
         if child.getType() == proto_parser.IMPORT_LITERAL:
             depend, = child.getChildren()
             depend = depend.getText().strip('"')
-            depend = os.path.join(dir, depend)
+            depend = os.path.join(_dir, depend)
             depend = abs_path(depend)
             for depend in proto_order(depend):
                 yield depend
@@ -117,7 +164,20 @@ def create_proto(protos, output, prefix):
     for proto in protos_order(protos):
         log.info('Processing {proto}'.format(proto=proto))
         root = root_rule(proto)
-        print proto_dict(root, prefix)
+        decoding = proto_dict(root, prefix)
+        proto_json = ProtoJSON(indent=8, separators=(',', ': '))
+        path = os.path.basename(proto)
+        path, _ = os.path.splitext(path)
+        path += '.py'
+        path = os.path.join(output, path)
+        with open(path, 'w') as fp:
+            fp.write('class decoding(object):')
+            for name, value in decoding.items():
+                value = ''.join(proto_json.iterencode(value))
+                fp.write(
+                    '\n    {name} = {value}'.format(name=name, value=value),
+                )
+
 
 def parse_args():
     parser = argparse.ArgumentParser(
