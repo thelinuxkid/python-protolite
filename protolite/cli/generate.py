@@ -20,6 +20,19 @@ ignore_types = [
     proto_parser.IMPORT_LITERAL,
 ]
 
+convenience_coder = """
+class convenience_coder(object):
+    def __init__(self, decoding, encoding):
+        self.decoding = decoding
+        self.encoding = encoding
+
+    def decode(self, message):
+        return protolite.decode(self.decoding, message)
+
+    def encode(self, message):
+        return protolite.encode(self.encoding, message)
+"""
+
 
 class ProtoJSON(json.JSONEncoder):
     def iterencode(self, obj):
@@ -217,8 +230,10 @@ def create(protos, output, prefix):
         decoding, dec_messages, encoding, enc_messages, enums = parse(root, prefix)
         module, path = output_info(proto, output)
         with open(path, 'w') as fp:
+            fp.write('import protolite\n')
             for _import in imports.keys():
                 fp.write('import {_import}\n'.format(_import=_import))
+            fp.write('\n')
             for name, enums in enums.items():
                 fp.write('class {name}(object):'.format(name=name))
                 for enum, value in enums.items():
@@ -252,7 +267,16 @@ def create(protos, output, prefix):
                 encoding.keys(),
                 imports,
             )
-            fp.write('\n')
+            fp.write(
+                '\n\n{convenience}\n'.format(convenience=convenience_coder),
+            )
+            for field in decoding.keys():
+                fp.write(
+                    '{field} = convenience_coder(decoding.{field}, '
+                    'encoding.{field})\n'.format(
+                        field=field,
+                    )
+                )
         imports[module] = decoding.keys()
 
 
