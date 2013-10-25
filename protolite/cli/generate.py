@@ -332,4 +332,6 @@ def main():
     protos = itertools.chain(*args.protos)
     protos = [abs_path(proto) for proto in protos]
     output = abs_path(args.output)
+    if not os.path.exists(output):
+        os.mkdir(output)
     create(protos, output, args.prefix)
