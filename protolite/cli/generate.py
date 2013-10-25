@@ -129,6 +129,7 @@ def parse(tree, prefix=None):
         decoding[name] = fields
 
     encoding = dict()
+    enums = dict()
     for name, fields in decoding.items():
         _fields = dict()
         for field, info in fields.items():
@@ -137,6 +138,7 @@ def parse(tree, prefix=None):
                 # enum definition
                 _info = dict([(v,k) for k,v in info.items()])
                 _fields[field] = _info
+                enums[field] = _info
                 continue
             _info = dict([
                 ('type', _type),
@@ -145,7 +147,7 @@ def parse(tree, prefix=None):
             _fields[info['name']] = _info
         encoding[name] = _fields
 
-    return decoding, dec_messages, encoding, enc_messages
+    return decoding, dec_messages, encoding, enc_messages, enums
 
 
 def _order(proto):
@@ -212,11 +214,18 @@ def create(protos, output, prefix):
     for proto in order(protos):
         log.info('Processing {proto}'.format(proto=proto))
         root = root_rule(proto)
-        decoding, dec_messages, encoding, enc_messages = parse(root, prefix)
+        decoding, dec_messages, encoding, enc_messages, enums = parse(root, prefix)
         module, path = output_info(proto, output)
         with open(path, 'w') as fp:
             for _import in imports.keys():
                 fp.write('import {_import}\n'.format(_import=_import))
+            for name, enums in enums.items():
+                fp.write('class {name}(object):'.format(name=name))
+                for enum, value in enums.items():
+                    fp.write(
+                        '\n    {enum} = {value}'.format(enum=enum, value=value),
+                    )
+                fp.write('\n\n')
             fp.write('\nclass decoding(object):')
             for name, value in decoding.items():
                 value = ''.join(proto_json.iterencode(value))
@@ -230,7 +239,6 @@ def create(protos, output, prefix):
                 decoding.keys(),
                 imports,
             )
-        with open(path, 'a') as fp:
             fp.write('\n\nclass encoding(object):')
             for name, value in encoding.items():
                 value = ''.join(proto_json.iterencode(value))
