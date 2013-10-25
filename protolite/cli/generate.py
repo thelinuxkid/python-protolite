@@ -47,6 +47,8 @@ class ProtoJSON(json.JSONEncoder):
 def abs_path(path):
   path = os.path.expanduser(path)
   path = os.path.abspath(path)
+  path = os.path.realpath(path)
+  path = os.path.normpath(path)
   return path
 
 
@@ -68,11 +70,11 @@ def root_rule(proto):
     return rule.tree
 
 
-def output_info(proto, output):
+def output_path(proto, output):
     path = os.path.basename(proto)
-    module, _ = os.path.splitext(path)
-    path = module + '.py'
-    return module, os.path.join(output, path)
+    path, _ = os.path.splitext(path)
+    path = path + '.py'
+    return os.path.join(output, path)
 
 
 def _parse(tree, prefix=None):
@@ -124,8 +126,8 @@ def _parse(tree, prefix=None):
 def parse(tree, prefix=None):
     proto = _parse(tree, prefix=prefix)
     decoding = dict()
-    dec_messages = defaultdict(dict)
-    enc_messages = defaultdict(dict)
+    dec_refs = defaultdict(dict)
+    enc_refs = defaultdict(dict)
     for name, fields in proto.items():
         for field, info in fields.items():
             if info.get('type') in ['embedded', 'repeated']:
@@ -137,8 +139,8 @@ def parse(tree, prefix=None):
                         message=message,
                     )
                     info['type'] = 'enum'
-                dec_messages[name][field] = message
-                enc_messages[name][info['name']] = message
+                dec_refs[name][field] = message
+                enc_refs[name][info['name']] = message
         decoding[name] = fields
 
     encoding = dict()
@@ -160,33 +162,36 @@ def parse(tree, prefix=None):
             _fields[info['name']] = _info
         encoding[name] = _fields
 
-    return decoding, dec_messages, encoding, enc_messages, enums
+    return decoding, dec_refs, encoding, enc_refs, enums
 
 
 def _order(proto):
+    module = os.path.basename(proto)
+    module, _ = os.path.splitext(module)
     _dir = os.path.dirname(proto)
     root = root_rule(proto)
+    imports = []
     for child in root.getChildren():
         if child.getType() == proto_parser.IMPORT_LITERAL:
-            depend, = child.getChildren()
-            depend = depend.getText().strip('"')
-            depend = os.path.join(_dir, depend)
-            depend = abs_path(depend)
-            for depend in _order(depend):
-                yield depend
-    yield proto
+            path, = child.getChildren()
+            path = path.getText().strip('"')
+            _module, _ = os.path.splitext(path)
+            imports.append(_module)
+            path = os.path.join(_dir, path)
+            path = abs_path(path)
+            for path, _module, _imports in _order(path):
+                yield path, _module, _imports
+    yield proto, module, imports
 
 
 def order(protos):
     done = []
     for proto in protos:
-        for depend in _order(proto):
-            if any([os.path.samefile(d, depend) for d in done]):
+        for path, module, imports in _order(proto):
+            if any([os.path.samefile(d, path) for d in done]):
                 continue
-            yield depend
-            done.append(depend)
-    if proto not in done:
-        yield proto
+            yield path, module, imports
+            done.append(path)
 
 
 def write_references(fp, coding, messages, fields, imports):
@@ -223,15 +228,16 @@ def write_references(fp, coding, messages, fields, imports):
 
 def create(protos, output, prefix):
     proto_json = ProtoJSON(indent=8, separators=(',', ': '))
-    imports = dict()
-    for proto in order(protos):
-        log.info('Processing {proto}'.format(proto=proto))
-        root = root_rule(proto)
-        decoding, dec_messages, encoding, enc_messages, enums = parse(root, prefix)
-        module, path = output_info(proto, output)
+    done = dict()
+    for path, module, imports in order(protos):
+        log.info('Processing {path}'.format(path=path))
+        root = root_rule(path)
+        decoding, dec_refs, encoding, enc_refs, enums = parse(root, prefix)
+        depends = dict([(k,v) for k,v in done.items() if k in imports])
+        path = output_path(path, output)
         with open(path, 'w') as fp:
             fp.write('import protolite\n')
-            for _import in imports.keys():
+            for _import in imports:
                 fp.write('import {_import}\n'.format(_import=_import))
             fp.write('\n')
             for name, enums in enums.items():
@@ -250,9 +256,9 @@ def create(protos, output, prefix):
             write_references(
                 fp,
                 'decoding',
-                dec_messages,
+                dec_refs,
                 decoding.keys(),
-                imports,
+                depends,
             )
             fp.write('\n\nclass encoding(object):')
             for name, value in encoding.items():
@@ -263,9 +269,9 @@ def create(protos, output, prefix):
             write_references(
                 fp,
                 'encoding',
-                enc_messages,
+                enc_refs,
                 encoding.keys(),
-                imports,
+                depends,
             )
             fp.write(
                 '\n\n{convenience}\n'.format(convenience=convenience_coder),
@@ -277,7 +283,7 @@ def create(protos, output, prefix):
                         field=field,
                     )
                 )
-        imports[module] = decoding.keys()
+        done[module] = decoding.keys()
 
 
 def parse_args():
