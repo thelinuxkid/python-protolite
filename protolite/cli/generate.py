@@ -131,16 +131,15 @@ def parse(tree, prefix=None):
     for name, fields in proto.items():
         for field, info in fields.items():
             if info.get('type') in ['embedded', 'repeated']:
-                message = info.pop('message')
-                if message in fields:
-                    # enum
-                    message = '{name}["{message}"]'.format(
-                        name=name,
-                        message=message,
-                    )
+                reference = info.pop('message')
+                if reference in fields:
+                    reference = '{name}["{reference}"]'.format(
+                            name=name,
+                            reference=reference,
+                        )
                     info['type'] = 'enum'
-                dec_refs[name][field] = message
-                enc_refs[name][info['name']] = message
+                dec_refs[name][field] = reference
+                enc_refs[name][info['name']] = reference
         decoding[name] = fields
 
     encoding = dict()
@@ -162,7 +161,15 @@ def parse(tree, prefix=None):
             _fields[info['name']] = _info
         encoding[name] = _fields
 
-    return decoding, dec_refs, encoding, enc_refs, enums
+    attrs = dict([
+        ('decoding', decoding),
+        ('encoding', encoding)
+    ])
+    references = dict([
+        ('decoding', dec_refs),
+        ('encoding', enc_refs),
+    ])
+    return attrs, references, enums
 
 
 def _order(proto):
@@ -194,36 +201,37 @@ def order(protos):
             done.append(path)
 
 
-def write_references(fp, coding, messages, fields, imports):
-    fp.write('\n')
-    for name, _fields in messages.items():
-        for field, message in _fields.items():
-            _message = message.rsplit('[')
-            _message = _message[0]
-            depend = ''
-            if not _message in fields:
-                for module, __fields in imports.items():
-                    if _message in __fields:
-                        depend = module + '.'
-                        break
-                if not depend:
-                    raise ValueError(
-                        'attribute is not in any module: {_message}'.format(
-                            _message=_message,
+def write_references(fp, references, fields, imports):
+    for coding, _references in references.items():
+        for name, _fields in _references.items():
+            for field, reference in _fields.items():
+                _reference = reference.rsplit('[')
+                _reference = _reference[0]
+                depend = ''
+                if _reference not in fields:
+                    for module, __fields in imports.items():
+                        if _reference in __fields:
+                            depend = module + '.'
+                            break
+                    if not depend:
+                        raise ValueError(
+                            'attribute is not in any module: {_message}'.format(
+                                _reference=_reference,
+                            )
                         )
-                    )
-            if coding == 'encoding':
-                field = '"{field}"'.format(field=field)
-            fp.write(
-                '\n{coding}.{name}[{field}]["message"] = '
-                '{depend}{coding}.{message}'.format(
-                    coding=coding,
-                    depend=depend,
-                    name=name,
-                    field=field,
-                    message=message,
-                ),
-            )
+                if coding == 'encoding':
+                    field = '"{field}"'.format(field=field)
+                fp.write(
+                    '\n{coding}.{name}[{field}]["message"] = '
+                    '{depend}{coding}.{reference}'.format(
+                        coding=coding,
+                        depend=depend,
+                        name=name,
+                        field=field,
+                        reference=reference,
+                    ),
+                )
+        fp.write('\n')
 
 
 def create(protos, output, prefix):
@@ -232,7 +240,8 @@ def create(protos, output, prefix):
     for path, module, imports in order(protos):
         log.info('Processing {path}'.format(path=path))
         root = root_rule(path)
-        decoding, dec_refs, encoding, enc_refs, enums = parse(root, prefix)
+        attrs, references, enums = parse(root, prefix)
+        fields = attrs['decoding'].keys()
         depends = dict([(k,v) for k,v in done.items() if k in imports])
         path = output_path(path, output)
         with open(path, 'w') as fp:
@@ -247,43 +256,31 @@ def create(protos, output, prefix):
                         '\n    {enum} = {value}'.format(enum=enum, value=value),
                     )
                 fp.write('\n\n')
-            fp.write('\nclass decoding(object):')
-            for name, value in decoding.items():
-                value = ''.join(proto_json.iterencode(value))
-                fp.write(
-                    '\n    {name} = {value}'.format(name=name, value=value),
-                )
+            for name, fields in attrs.items():
+                fp.write('\nclass {name}(object):'.format(name=name))
+                for field, value in fields.items():
+                    value = ''.join(proto_json.iterencode(value))
+                    fp.write(
+                        '\n    {field} = {value}'.format(field=field, value=value),
+                    )
+                fp.write('\n')
             write_references(
                 fp,
-                'decoding',
-                dec_refs,
-                decoding.keys(),
-                depends,
-            )
-            fp.write('\n\nclass encoding(object):')
-            for name, value in encoding.items():
-                value = ''.join(proto_json.iterencode(value))
-                fp.write(
-                    '\n    {name} = {value}'.format(name=name, value=value),
-                )
-            write_references(
-                fp,
-                'encoding',
-                enc_refs,
-                encoding.keys(),
+                references,
+                fields,
                 depends,
             )
             fp.write(
-                '\n\n{convenience}\n'.format(convenience=convenience_coder),
+                '\n{convenience}\n'.format(convenience=convenience_coder),
             )
-            for field in decoding.keys():
+            for field in fields:
                 fp.write(
                     '{field} = convenience_coder(decoding.{field}, '
                     'encoding.{field})\n'.format(
                         field=field,
                     )
                 )
-        done[module] = decoding.keys()
+        done[module] = fields
 
 
 def parse_args():
