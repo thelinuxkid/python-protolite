@@ -204,6 +204,71 @@ def test_encode_delimited_simple():
     equal(want, value)
 
 
+def test_decode_delimited_varint():
+    dec_message = dict([
+        (1, dict([
+            ('type', 'string'),
+            ('name', 'first_name'),
+        ])),
+    ])
+    dec_proto = dict([
+        (305, dict([
+            ('type', 'embedded'),
+            ('name', 'dec_message'),
+            ('message', dec_message),
+        ])),
+    ])
+    data = '\x8a\x13\xcf\t'
+    msg = protolite.decode(dec_proto, data)
+    want = dict([
+        ('dec_message', dict()),
+    ])
+    equal(want, msg)
+
+
+def test_encode_delimited_varint():
+    # Don't check against data string since protolite doesn't use OrderedDict
+    def _index():
+        for i in range(0, 22):
+            for j in range(32, 127):
+                yield j+(127*i), chr(j)*(i+1)
+    enc_message = dict()
+    for i, c in _index():
+        enc_message[c] = dict([
+            ('type', 'string'),
+            ('field', i),
+        ])
+    enc_proto = dict([
+        ('message_foo', dict([
+            ('type', 'embedded'),
+            ('field', 305),
+            ('message', enc_message),
+        ])),
+    ])
+    dec_message = dict()
+    for i, c in _index():
+        dec_message[i] = dict([
+            ('type', 'string'),
+            ('name', c),
+        ])
+    dec_proto = dict([
+        (305, dict([
+            ('type', 'embedded'),
+            ('name', 'message_foo'),
+            ('message', dec_message),
+        ])),
+    ])
+    msg = dict()
+    for i, c in _index():
+        msg[c] = str(i)
+    msg = dict([
+        ('message_foo', msg),
+    ])
+    data = protolite.encode(enc_proto, msg)
+    res = protolite.decode(dec_proto, data)
+    equal(msg, res)
+
+
 def test_decode_embedded():
     data = '\x08\x08B\x12\n\r\x08\x04"\t\n\x07foobody\x18\xb9`'
     msg = protolite.decode(decoding.message_sna, data)
@@ -366,7 +431,7 @@ def test_decode_varint_key():
             ('message', dec_message),
         ])),
     ])
-    data = '\x08\xb1\x02\x8a\x13\xcf'
+    data = '\x08\xb1\x02\x8a\x13\xcf\t'
     msg = protolite.decode(dec_proto, data)
     want = dict([
         ('type', 'msg-type'),

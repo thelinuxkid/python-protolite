@@ -85,8 +85,7 @@ def encode_varint(num):
 def decode_delimited(data, index):
     "return a string, bytes, embedded messages, or packed repeated fields"
 
-    length = data[index]
-    index += 1
+    length, index = decode_varint(data, index)
     last = index
     index += length
     res = data[last:index]
@@ -97,8 +96,9 @@ def encode_delimited(item):
     "return an encoded string, bytes, embedded messages, or packed repeated fields"
 
     length = len(item)
+    length = encode_varint(length)
     data = [ord(i) for i in item]
-    return [length] + data
+    return length + data
 
 
 def decode(proto, data):
@@ -193,18 +193,16 @@ def _encode(proto, msg):
             key = encode_varint(key)
             if _type == 'embedded':
                 value = _encode(info['message'], v)
-                data += key
-                data.append(len(value))
-                data += value
+                length = encode_varint(len(value))
+                data += key + length + value
             if _type == 'string':
                 value = encode_delimited(v)
                 data += key + value
             if _type == 'repeated':
                 for d in v:
                     value = _encode(info['message'], d)
-                    data += key
-                    data.append(len(value))
-                    data += value
+                    length = encode_varint(len(value))
+                    data += key + length + value
             continue
         if _type in _32bit_types:
             key = encode_key(field, 5)
