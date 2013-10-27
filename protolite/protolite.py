@@ -111,9 +111,8 @@ def _decode(proto, data):
     length = len(data)
     msg = dict()
     while index < length:
-        value = data[index]
-        index += 1
-        field, wire = decode_key(value & 127)
+        value, index = decode_varint(data, index)
+        field, wire = decode_key(value)
         if field not in proto:
             continue
         info = proto[field]
@@ -171,6 +170,7 @@ def _encode(proto, msg):
         if _type in varint_types:
             # TODO support int32, int64, uint32, uint64, sint32, sint64
             key = encode_key(field, 0)
+            key = encode_varint(key)
             if _type == 'enum':
                 num = info['message'][v]
                 value = encode_varint(num)
@@ -178,40 +178,39 @@ def _encode(proto, msg):
                 value = encode_varint(int(v))
             if _type in varints:
                 value = encode_varint(v)
-            data.append(key)
-            data += value
+            data += key + value
             continue
         if _type in _64bit_types:
             key = encode_key(field, 1)
+            key = encode_varint(key)
             fmt = struct_formats[_type]
             value = encode_struct(v, fmt)
-            data.append(key)
-            data += value
+            data += key + value
             continue
         if _type in delimited_types:
             # TODO support bytes and packed repeated fields
             key = encode_key(field, 2)
+            key = encode_varint(key)
             if _type == 'embedded':
                 value = _encode(info['message'], v)
-                data.append(key)
+                data += key
                 data.append(len(value))
                 data += value
             if _type == 'string':
                 value = encode_delimited(v)
-                data.append(key)
-                data += value
+                data += key + value
             if _type == 'repeated':
                 for d in v:
                     value = _encode(info['message'], d)
-                    data.append(key)
+                    data += key
                     data.append(len(value))
                     data += value
             continue
         if _type in _32bit_types:
             key = encode_key(field, 5)
+            key = encode_varint(key)
             fmt = struct_formats[_type]
             value = encode_struct(v, fmt)
-            data.append(key)
-            data += value
+            data += key + value
             continue
     return data

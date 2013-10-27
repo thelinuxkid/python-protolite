@@ -343,3 +343,86 @@ def test_encode_enum_simple():
     data = protolite.encode(enc_proto, msg)
     res = protolite.decode(dec_proto, data)
     equal(msg, res)
+
+def test_decode_varint_key():
+    dec_type = dict([
+        (305, 'msg-type'),
+    ])
+    dec_message = dict([
+        (1, dict([
+            ('type', 'string'),
+            ('name', 'first_name'),
+        ])),
+    ])
+    dec_proto = dict([
+        (1, dict([
+            ('type', 'enum'),
+            ('name', 'type'),
+            ('message', dec_type),
+        ])),
+        (305, dict([
+            ('type', 'embedded'),
+            ('name', 'dec_message'),
+            ('message', dec_message),
+        ])),
+    ])
+    data = '\x08\xb1\x02\x8a\x13\xcf'
+    msg = protolite.decode(dec_proto, data)
+    want = dict([
+        ('type', 'msg-type'),
+        ('dec_message', dict()),
+    ])
+    equal(want, msg)
+
+
+def test_encode_varint_key():
+    # Don't check against data string since protolite doesn't use OrderedDict
+    enc_type = dict([
+        ('msg-type', 305),
+    ])
+    enc_message = dict([
+        ('first_name', dict([
+            ('type', 'string'),
+            ('field', 1),
+        ])),
+    ])
+    enc_proto = dict([
+        ('type', dict([
+            ('type', 'enum'),
+            ('field', 1),
+            ('message', enc_type),
+        ])),
+        ('message_foo', dict([
+            ('type', 'embedded'),
+            ('field', 305),
+            ('message', enc_message),
+        ])),
+    ])
+    dec_type = dict([
+        (305, 'msg-type'),
+    ])
+    dec_message = dict([
+        (1, dict([
+            ('type', 'string'),
+            ('name', 'first_name'),
+        ])),
+    ])
+    dec_proto = dict([
+        (1, dict([
+            ('type', 'enum'),
+            ('name', 'type'),
+            ('message', dec_type),
+        ])),
+        (305, dict([
+            ('type', 'embedded'),
+            ('name', 'message_foo'),
+            ('message', dec_message),
+        ])),
+    ])
+    msg = dict([
+        ('type', 'msg-type'),
+        ('message_foo', dict()),
+    ])
+    data = protolite.encode(enc_proto, msg)
+    res = protolite.decode(dec_proto, data)
+    equal(msg, res)
