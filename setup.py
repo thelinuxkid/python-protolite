@@ -48,7 +48,7 @@ setup(
         ],
     entry_points={
         'console_scripts': [
-            'protolite-generate = protolite.cli.generate:main[parser]',
+            'python-protolitec = protolite.cli.protolitec:main[parser]',
         ],
     },
     extras_require=EXTRAS_REQUIRES,
