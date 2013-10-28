@@ -5,7 +5,7 @@ import argparse
 import logging
 import itertools
 
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 
 from antlr3 import ANTLRFileStream, CommonTokenStream
 
@@ -33,6 +33,12 @@ class convenience_coder(object):
     def encode(self, message):
         return protolite.encode(self.encoding, message)
 """
+
+
+class DefaultOrderedDict(defaultdict, OrderedDict):
+    def __init__(self, default_factory):
+        defaultdict.__init__(self, default_factory)
+        OrderedDict.__init__(self)
 
 
 class ProtoJSON(json.JSONEncoder):
@@ -90,16 +96,16 @@ def _parse(tree, prefix=None):
 
     # top-level
     if tree.getType() == proto_parser.PROTO:
-        return dict(children)
+        return OrderedDict(children)
 
     if tree.getType() in [proto_parser.MESSAGE_LITERAL, proto_parser.ENUM_LITERAL]:
         name = children.pop(0)
         name = underscore(name.getText(), prefix=prefix)
-        return name, dict(children)
+        return name, OrderedDict(children)
 
     if tree.getType() == proto_parser.MESSAGE_FIELD:
         scope, field_type, field_name, field_number = children
-        fields = dict()
+        fields = OrderedDict()
         fields['type'] = underscore(field_type.getText(), prefix=prefix)
         if field_type.getType() == proto_parser.IDENTIFIER:
             # enum ,embedded or repeated
@@ -122,12 +128,12 @@ def _parse(tree, prefix=None):
 
 def parse(tree, prefix=None):
     proto = _parse(tree, prefix=prefix)
-    decoding = dict()
-    dec_refs = defaultdict(dict)
-    enc_refs = defaultdict(dict)
-    enums = dict()
+    decoding = OrderedDict()
+    dec_refs = DefaultOrderedDict(OrderedDict)
+    enc_refs = DefaultOrderedDict(OrderedDict)
+    enums = OrderedDict()
     for name, fields in proto.items():
-        _fields = defaultdict(dict)
+        _fields = DefaultOrderedDict(OrderedDict)
         for field, info in fields.items():
             _type = info.get('type')
             if _type in ['embedded', 'repeated']:
@@ -146,28 +152,28 @@ def parse(tree, prefix=None):
                 _fields[field] = info
         decoding[name] = _fields
 
-    encoding = dict()
+    encoding = OrderedDict()
     for name, fields in decoding.items():
-        _fields = defaultdict(dict)
+        _fields = DefaultOrderedDict(OrderedDict)
         for field, info in fields.items():
             if field == 'enums':
                 for _name, values in info.items():
-                    values = dict([(v,k) for k,v in values.items()])
+                    values = OrderedDict([(v,k) for k,v in values.items()])
                     _fields['enums'][_name] = values
                     enums[_name] = values
                 continue
-            _info = dict([
+            _info = OrderedDict([
                 ('type', info['type']),
                 ('field', field),
             ])
             _fields[info['name']] = _info
         encoding[name] = _fields
 
-    attrs = dict([
+    attrs = OrderedDict([
         ('decoding', decoding),
         ('encoding', encoding)
     ])
-    references = dict([
+    references = OrderedDict([
         ('decoding', dec_refs),
         ('encoding', enc_refs),
     ])
