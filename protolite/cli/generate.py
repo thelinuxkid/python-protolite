@@ -59,10 +59,12 @@ def abs_path(path):
   return path
 
 
-def underscore(camel, prefix=None):
-    if prefix is not None:
+def underscore(camel, prefixes=[]):
+    prefixes = sorted(prefixes, key=len, reverse=True)
+    for prefix in prefixes:
         if camel.startswith(prefix):
             camel = camel[len(prefix):]
+            break
     under = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', camel)
     under = re.sub('([a-z0-9])([A-Z])', r'\1_\2', under).lower()
     return under
@@ -84,13 +86,13 @@ def output_path(proto, output):
     return os.path.join(output, path)
 
 
-def _parse(tree, prefix=None):
+def _parse(tree, prefixes=[]):
     if tree is None or tree.getType() in ignore_types:
         return None
 
     children =[]
     for child in tree.getChildren():
-        _child = _parse(child, prefix)
+        _child = _parse(child, prefixes)
         if _child:
             children.append(_child)
 
@@ -100,34 +102,34 @@ def _parse(tree, prefix=None):
 
     if tree.getType() in [proto_parser.MESSAGE_LITERAL, proto_parser.ENUM_LITERAL]:
         name = children.pop(0)
-        name = underscore(name.getText(), prefix=prefix)
+        name = underscore(name.getText(), prefixes=prefixes)
         return name, OrderedDict(children)
 
     if tree.getType() == proto_parser.MESSAGE_FIELD:
         scope, field_type, field_name, field_number = children
         fields = OrderedDict()
-        fields['type'] = underscore(field_type.getText(), prefix=prefix)
+        fields['type'] = underscore(field_type.getText(), prefixes=prefixes)
         if field_type.getType() == proto_parser.IDENTIFIER:
             # enum ,embedded or repeated
             fields['message'] = fields['type']
             fields['type'] = 'embedded'
             if scope.getText() == 'repeated':
                 fields['type'] = 'repeated'
-        fields['name'] = underscore(field_name.getText(), prefix=prefix)
+        fields['name'] = underscore(field_name.getText(), prefixes=prefixes)
         field_number = int(field_number.getText())
         return field_number, fields
 
     if tree.getType() == proto_parser.ENUM_FIELD:
         enum_name, enum_number = children
-        enum_name = underscore(enum_name.getText(), prefix=prefix)
+        enum_name = underscore(enum_name.getText(), prefixes=prefixes)
         enum_number = int(enum_number.getText())
         return enum_number, enum_name
 
     return tree
 
 
-def parse(tree, prefix=None):
-    proto = _parse(tree, prefix=prefix)
+def parse(tree, prefixes=[]):
+    proto = _parse(tree, prefixes=prefixes)
     decoding = OrderedDict()
     dec_refs = DefaultOrderedDict(OrderedDict)
     enc_refs = DefaultOrderedDict(OrderedDict)
@@ -242,13 +244,13 @@ def write_references(fp, references, fields, imports):
         fp.write('\n')
 
 
-def create(protos, output, prefix):
+def create(protos, output, prefixes):
     proto_json = ProtoJSON(indent=8, separators=(',', ': '))
     done = dict()
     for path, module, imports in order(protos):
         log.info('Processing {path}'.format(path=path))
         root = root_rule(path)
-        attrs, references, enums = parse(root, prefix)
+        attrs, references, enums = parse(root, prefixes)
         fields = attrs['decoding'].keys()
         depends = dict([(k,v) for k,v in done.items() if k in imports])
         path = output_path(path, output)
@@ -319,8 +321,10 @@ def parse_args():
         type=str,
     )
     parser.add_argument(
-        '--prefix',
-        help='prefix to remove from protobuf names',
+        '--prefixes',
+        help='prefixes to remove from protobuf names',
+        nargs='+',
+        action='append',
         type=str,
         default=None,
     )
@@ -339,4 +343,5 @@ def main():
     output = abs_path(args.output)
     if not os.path.exists(output):
         os.mkdir(output)
-    create(protos, output, args.prefix)
+    prefixes = list(itertools.chain(*args.prefixes))
+    create(protos, output, prefixes)
