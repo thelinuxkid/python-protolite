@@ -60,7 +60,7 @@ def abs_path(path):
 
 
 def underscore(camel, prefixes=[]):
-    prefixes = sorted(prefixes, key=len, reverse=True)
+    prefixes.sort(key=len, reverse=True)
     for prefix in prefixes:
         if camel.startswith(prefix):
             camel = camel[len(prefix):]
@@ -331,6 +331,12 @@ def parse_args():
     return parser.parse_args()
 
 
+def flatten_args(args):
+    args = itertools.chain(*args)
+    args = [arg.rstrip(',') for arg in args]
+    return args
+
+
 def main():
     args = parse_args()
     logging.basicConfig(
@@ -338,10 +344,10 @@ def main():
         format='%(asctime)s.%(msecs)03d %(name)s: %(levelname)s: %(message)s',
         datefmt='%Y-%m-%dT%H:%M:%S',
     )
-    protos = itertools.chain(*args.protos)
+    protos = flatten_args(args.protos)
     protos = [abs_path(proto) for proto in protos]
     output = abs_path(args.output)
     if not os.path.exists(output):
         os.mkdir(output)
-    prefixes = list(itertools.chain(*args.prefixes))
+    prefixes = flatten_args(args.prefixes)
     create(protos, output, prefixes)
