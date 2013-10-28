@@ -18,6 +18,7 @@ log = logging.getLogger(__name__)
 ignore_types = [
     proto_parser.OPTION_LITERAL,
     proto_parser.IMPORT_LITERAL,
+    proto_parser.PACKAGE_LITERAL,
 ]
 
 convenience_coder = """
@@ -81,10 +82,6 @@ def _parse(tree, prefix=None):
     if tree is None or tree.getType() in ignore_types:
         return None
 
-    if tree.getType() == proto_parser.PACKAGE_LITERAL:
-        # TODO should the package be used as a namespace?
-        return None
-
     children =[]
     for child in tree.getChildren():
         _child = _parse(child, prefix)
@@ -128,34 +125,39 @@ def parse(tree, prefix=None):
     decoding = dict()
     dec_refs = defaultdict(dict)
     enc_refs = defaultdict(dict)
+    enums = dict()
     for name, fields in proto.items():
+        _fields = defaultdict(dict)
         for field, info in fields.items():
-            if info.get('type') in ['embedded', 'repeated']:
+            _type = info.get('type')
+            if _type in ['embedded', 'repeated']:
                 reference = info.pop('message')
                 if reference in fields:
-                    reference = '{name}["{reference}"]'.format(
+                    enum = fields[reference]
+                    _fields['enums'][reference] = enum
+                    reference = '{name}["enums"]["{reference}"]'.format(
                             name=name,
                             reference=reference,
                         )
                     info['type'] = 'enum'
                 dec_refs[name][field] = reference
                 enc_refs[name][info['name']] = reference
-        decoding[name] = fields
+            if _type:
+                _fields[field] = info
+        decoding[name] = _fields
 
     encoding = dict()
-    enums = dict()
     for name, fields in decoding.items():
-        _fields = dict()
+        _fields = defaultdict(dict)
         for field, info in fields.items():
-            _type = info.get('type')
-            if not _type:
-                # enum definition
-                _info = dict([(v,k) for k,v in info.items()])
-                _fields[field] = _info
-                enums[field] = _info
+            if field == 'enums':
+                for _name, values in info.items():
+                    values = dict([(v,k) for k,v in values.items()])
+                    _fields['enums'][_name] = values
+                    enums[_name] = values
                 continue
             _info = dict([
-                ('type', _type),
+                ('type', info['type']),
                 ('field', field),
             ])
             _fields[info['name']] = _info
