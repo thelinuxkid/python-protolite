@@ -113,6 +113,7 @@ def _parse(tree, prefixes=[]):
     if tree.getType() == proto_parser.ENUM_FIELD:
         enum_name, enum_number = children
         enum_name = underscore(enum_name.getText(), prefixes=prefixes)
+        enum_name = enum_name.upper()
         enum_number = int(enum_number.getText())
         return enum_number, enum_name
 
