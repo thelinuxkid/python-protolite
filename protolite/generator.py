@@ -41,9 +41,10 @@ class DefaultOrderedDict(defaultdict, OrderedDict):
 
 
 class ProtoJSON(json.JSONEncoder):
-    def iterencode(self, obj):
+    def iterencode(self, obj, prefixes):
         data = json.JSONEncoder.iterencode(self, obj)
         for value in data:
+            value = underscore(value, prefixes=prefixes)
             stripped = value.strip('"')
             if stripped.isdigit():
                 value = stripped
@@ -77,10 +78,9 @@ def output_path(proto, output):
     return os.path.join(output, path)
 
 
-def _parse(tree, prefixes=[]):
+def _parse(tree):
     def _literal(children):
-        name = children.pop(0)
-        name = underscore(name.getText(), prefixes=prefixes)
+        name = children.pop(0).getText()
         return name, OrderedDict(children)
 
     if tree is None or tree.getType() in ignore_types:
@@ -88,7 +88,7 @@ def _parse(tree, prefixes=[]):
 
     children =[]
     for child in tree.getChildren():
-        _child = _parse(child, prefixes)
+        _child = _parse(child)
         if _child:
             children.append(_child)
 
@@ -108,9 +108,9 @@ def _parse(tree, prefixes=[]):
     if _type == proto_parser.MESSAGE_FIELD:
         scope, field_type, field_name, field_number = children
         fields = OrderedDict()
-        fields['name'] = underscore(field_name.getText(), prefixes=prefixes)
         field_number = int(field_number.getText())
-        fields['type'] = underscore(field_type.getText(), prefixes=prefixes)
+        fields['name'] = field_name.getText()
+        fields['type'] = field_type.getText()
         if field_type.getType() == proto_parser.IDENTIFIER:
             _tree = tree.getParent()
             while _tree:
@@ -129,8 +129,7 @@ def _parse(tree, prefixes=[]):
 
     if _type == proto_parser.ENUM_FIELD:
         enum_name, enum_number = children
-        enum_name = underscore(enum_name.getText(), prefixes=prefixes)
-        enum_name = enum_name.upper()
+        enum_name = enum_name.getText().upper()
         enum_number = int(enum_number.getText())
         return enum_number, enum_name
 
@@ -138,7 +137,7 @@ def _parse(tree, prefixes=[]):
 
 
 def parse(tree, prefixes=[]):
-    proto = _parse(tree, prefixes=prefixes)
+    proto = _parse(tree)
     decoding = OrderedDict()
     dec_refs = DefaultOrderedDict(OrderedDict)
     enc_refs = DefaultOrderedDict(OrderedDict)
@@ -210,7 +209,7 @@ def order(protos):
             done.append(path)
 
 
-def write_references(fp, references, fields, imports):
+def write_references(fp, references, fields, imports, prefixes):
     for coding, _references in references.items():
         for name, _fields in _references.items():
             for field, reference in _fields.items():
@@ -228,7 +227,10 @@ def write_references(fp, references, fields, imports):
                                 _reference=_reference,
                             )
                         )
+                name = underscore(name, prefixes=prefixes)
+                reference = underscore(reference, prefixes=prefixes)
                 if coding == 'encoding':
+                    field = underscore(field, prefixes=prefixes)
                     field = '"{field}"'.format(field=field)
                 fp.write(
                     '\n{coding}.{name}[{field}]["message"] = '
@@ -259,16 +261,18 @@ def generate(protos, output, prefixes):
                 fp.write('import {_import}\n'.format(_import=_import))
             fp.write('\n')
             for name, enums in enums.items():
+                name = underscore(name, prefixes=prefixes)
                 fp.write('class {name}(object):'.format(name=name))
                 for enum, value in enums.items():
                     fp.write(
                         '\n    {enum} = {value}'.format(enum=enum, value=value),
                     )
                 fp.write('\n\n')
-            for name, fields in attrs.items():
+            for name, _fields in attrs.items():
                 fp.write('\nclass {name}(object):'.format(name=name))
-                for field, value in fields.items():
-                    value = ''.join(proto_json.iterencode(value))
+                for field, value in _fields.items():
+                    value = ''.join(proto_json.iterencode(value, prefixes))
+                    field = underscore(field, prefixes=prefixes)
                     fp.write(
                         '\n    {field} = {value}'.format(field=field, value=value),
                     )
@@ -278,11 +282,13 @@ def generate(protos, output, prefixes):
                 references,
                 fields,
                 depends,
+                prefixes,
             )
             fp.write(
                 '\n{convenience}\n'.format(convenience=convenience_coder),
             )
             for field in fields:
+                field = underscore(field, prefixes=prefixes)
                 fp.write(
                     '{field} = convenience_coder(decoding.{field}, '
                     'encoding.{field})\n'.format(
