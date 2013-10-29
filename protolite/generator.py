@@ -78,6 +78,11 @@ def output_path(proto, output):
 
 
 def _parse(tree, prefixes=[]):
+    def _literal(children):
+        name = children.pop(0)
+        name = underscore(name.getText(), prefixes=prefixes)
+        return name, OrderedDict(children)
+
     if tree is None or tree.getType() in ignore_types:
         return None
 
@@ -87,30 +92,42 @@ def _parse(tree, prefixes=[]):
         if _child:
             children.append(_child)
 
+    _type = tree.getType()
     # top-level
-    if tree.getType() == proto_parser.PROTO:
+    if _type == proto_parser.PROTO:
         return OrderedDict(children)
 
-    if tree.getType() in [proto_parser.MESSAGE_LITERAL, proto_parser.ENUM_LITERAL]:
-        name = children.pop(0)
-        name = underscore(name.getText(), prefixes=prefixes)
+    if _type == proto_parser.MESSAGE_LITERAL:
+        return _literal(children)
+
+    if _type == proto_parser.ENUM_LITERAL:
+        name, children = _literal(children)
+        children['type'] = 'enum_literal'
         return name, OrderedDict(children)
 
-    if tree.getType() == proto_parser.MESSAGE_FIELD:
+    if _type == proto_parser.MESSAGE_FIELD:
         scope, field_type, field_name, field_number = children
         fields = OrderedDict()
+        fields['name'] = underscore(field_name.getText(), prefixes=prefixes)
+        field_number = int(field_number.getText())
         fields['type'] = underscore(field_type.getText(), prefixes=prefixes)
         if field_type.getType() == proto_parser.IDENTIFIER:
-            # enum ,embedded or repeated
+            _tree = tree.getParent()
+            while _tree:
+                for child in _tree.children:
+                    if (child.getType() == proto_parser.ENUM_LITERAL and
+                        child.children[0].getText() == field_type.getText()
+                    ):
+                        fields['type'] = 'enum'
+                        return field_number, fields
+                _tree = _tree.getParent()
             fields['message'] = fields['type']
             fields['type'] = 'embedded'
             if scope.getText() == 'repeated':
                 fields['type'] = 'repeated'
-        fields['name'] = underscore(field_name.getText(), prefixes=prefixes)
-        field_number = int(field_number.getText())
         return field_number, fields
 
-    if tree.getType() == proto_parser.ENUM_FIELD:
+    if _type == proto_parser.ENUM_FIELD:
         enum_name, enum_number = children
         enum_name = underscore(enum_name.getText(), prefixes=prefixes)
         enum_name = enum_name.upper()
@@ -129,33 +146,23 @@ def parse(tree, prefixes=[]):
     for name, fields in proto.items():
         _fields = DefaultOrderedDict(OrderedDict)
         for field, info in fields.items():
-            _type = info.get('type')
-            if _type in ['embedded', 'repeated']:
+            if info['type'] == 'enum_literal':
+                enum = OrderedDict(
+                    [(v,k) for k,v in info.items() if k != 'type']
+                )
+                enums[field] = enum
+                continue
+            if info['type'] in ['embedded', 'repeated']:
                 reference = info.pop('message')
-                if reference in fields:
-                    enum = fields[reference]
-                    _fields['enums'][reference] = enum
-                    reference = '{name}["enums"]["{reference}"]'.format(
-                            name=name,
-                            reference=reference,
-                        )
-                    info['type'] = 'enum'
                 dec_refs[name][field] = reference
                 enc_refs[name][info['name']] = reference
-            if _type:
-                _fields[field] = info
+            _fields[field] = info
         decoding[name] = _fields
 
     encoding = OrderedDict()
     for name, fields in decoding.items():
         _fields = DefaultOrderedDict(OrderedDict)
         for field, info in fields.items():
-            if field == 'enums':
-                for _name, values in info.items():
-                    values = OrderedDict([(v,k) for k,v in values.items()])
-                    _fields['enums'][_name] = values
-                    enums[_name] = values
-                continue
             _info = OrderedDict([
                 ('type', info['type']),
                 ('field', field),
