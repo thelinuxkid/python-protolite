@@ -10,14 +10,10 @@ class decoding(object):
             ('name', 'body'),
         ])),
     ])
-    bar_type = dict([
-        (4, 'text'),
-    ])
     message_bar = dict([
         (1, dict([
             ('type', 'enum'),
             ('name', 'type'),
-            ('message', bar_type),
         ])),
         (4, dict([
             ('type', 'embedded'),
@@ -36,14 +32,10 @@ class decoding(object):
             ('name', 'baz_id'),
         ])),
     ])
-    sna_type = dict([
-        (8, 'message_baz'),
-    ])
     message_sna = dict([
         (1, dict([
             ('type', 'enum'),
             ('name', 'type'),
-            ('message', sna_type),
         ])),
         (8, dict([
             ('type', 'embedded'),
@@ -77,14 +69,10 @@ class encoding(object):
             ('field', 1),
         ])),
     ])
-    bar_type = dict([
-        ('text', 4),
-    ])
     message_bar = dict([
         ('type', dict([
             ('type', 'enum'),
             ('field', 1),
-            ('message', bar_type),
         ])),
         ('message_foo', dict([
             ('type', 'embedded'),
@@ -120,14 +108,10 @@ class encoding(object):
             ('message', foo)
         ])),
     ])
-    sna_type = dict([
-        ('message_baz', 8),
-    ])
     message_sna = dict([
         ('type', dict([
             ('type', 'enum'),
             ('field', 1),
-            ('message', sna_type),
         ])),
         ('message_baz', dict([
             ('type', 'embedded'),
@@ -279,10 +263,10 @@ def test_decode_embedded():
                 ('message_foo', dict([
                     ('body', 'foobody'),
                 ])),
-                ('type', 'text'),
+                ('type', 4),
             ])),
         ])),
-        ('type', 'message_baz'),
+        ('type', 8),
     ])
     equal(want, msg)
 
@@ -296,10 +280,10 @@ def test_encode_embedded():
                 ('message_foo', dict([
                     ('body', 'foobody'),
                 ])),
-                ('type', 'text'),
+                ('type', 4),
             ])),
         ])),
-        ('type', 'message_baz'),
+        ('type', 8),
     ])
     data = protolite.encode(encoding.message_sna, msg)
     res = protolite.decode(decoding.message_sna, data)
@@ -366,53 +350,38 @@ def test_encode_bool_simple():
 
 
 def test_decode_enum_simple():
-    _type = dict([
-        (7, 'msg-type'),
-    ])
     proto = dict([
         (7, dict([
             ('type', 'enum'),
             ('name', 'type'),
-            ('message', _type),
         ])),
     ])
     data = '8\x07'
     msg = protolite.decode(proto, data)
-    want = dict([('type', 'msg-type')])
+    want = dict([('type', 7)])
     equal(want, msg)
 
 
 def test_encode_enum_simple():
     # Don't check against data string since protolite doesn't use OrderedDict
-    enc_type = dict([
-        ('msg-type', 7),
-    ])
     enc_proto = dict([
         ('type', dict([
             ('type', 'enum'),
             ('field', 7),
-            ('message', enc_type),
         ])),
-    ])
-    dec_type = dict([
-        (7, 'msg-type'),
     ])
     dec_proto = dict([
         (7, dict([
             ('type', 'enum'),
             ('name', 'type'),
-            ('message', dec_type),
         ])),
     ])
-    msg = dict([('type', 'msg-type')])
+    msg = dict([('type', 7)])
     data = protolite.encode(enc_proto, msg)
     res = protolite.decode(dec_proto, data)
     equal(msg, res)
 
 def test_decode_varint_key():
-    dec_type = dict([
-        (305, 'msg-type'),
-    ])
     dec_message = dict([
         (1, dict([
             ('type', 'string'),
@@ -423,7 +392,6 @@ def test_decode_varint_key():
         (1, dict([
             ('type', 'enum'),
             ('name', 'type'),
-            ('message', dec_type),
         ])),
         (305, dict([
             ('type', 'embedded'),
@@ -434,7 +402,7 @@ def test_decode_varint_key():
     data = '\x08\xb1\x02\x8a\x13\xcf\t'
     msg = protolite.decode(dec_proto, data)
     want = dict([
-        ('type', 'msg-type'),
+        ('type', 305),
         ('dec_message', dict()),
     ])
     equal(want, msg)
@@ -442,9 +410,6 @@ def test_decode_varint_key():
 
 def test_encode_varint_key():
     # Don't check against data string since protolite doesn't use OrderedDict
-    enc_type = dict([
-        ('msg-type', 305),
-    ])
     enc_message = dict([
         ('first_name', dict([
             ('type', 'string'),
@@ -455,16 +420,12 @@ def test_encode_varint_key():
         ('type', dict([
             ('type', 'enum'),
             ('field', 1),
-            ('message', enc_type),
         ])),
         ('message_foo', dict([
             ('type', 'embedded'),
             ('field', 305),
             ('message', enc_message),
         ])),
-    ])
-    dec_type = dict([
-        (305, 'msg-type'),
     ])
     dec_message = dict([
         (1, dict([
@@ -476,7 +437,6 @@ def test_encode_varint_key():
         (1, dict([
             ('type', 'enum'),
             ('name', 'type'),
-            ('message', dec_type),
         ])),
         (305, dict([
             ('type', 'embedded'),
@@ -485,7 +445,7 @@ def test_encode_varint_key():
         ])),
     ])
     msg = dict([
-        ('type', 'msg-type'),
+        ('type', 305),
         ('message_foo', dict()),
     ])
     data = protolite.encode(enc_proto, msg)

@@ -169,12 +169,9 @@ def _encode(proto, msg):
             # TODO support int32, int64, uint32, uint64, sint32, sint64
             key = encode_key(field, 0)
             key = encode_varint(key)
-            if _type == 'enum':
-                value = encode_varint(v)
             if _type == 'bool':
-                value = encode_varint(int(v))
-            if _type in varints:
-                value = encode_varint(v)
+                v = int(v)
+            value = encode_varint(v)
             data += key + value
             continue
         if _type in _64bit_types:
