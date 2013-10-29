@@ -172,8 +172,7 @@ def _encode(proto, msg):
             key = encode_key(field, 0)
             key = encode_varint(key)
             if _type == 'enum':
-                num = info['message'][v]
-                value = encode_varint(num)
+                value = encode_varint(v)
             if _type == 'bool':
                 value = encode_varint(int(v))
             if _type in varints:
