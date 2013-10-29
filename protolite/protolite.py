@@ -123,8 +123,6 @@ def _decode(proto, data):
             num, index = decode_varint(data, index)
             if _type == 'bool':
                 num = bool(num)
-            if _type == 'enum':
-                num = info['message'][num]
             msg[name] = num
             continue
         if wire == 1:
