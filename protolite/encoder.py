@@ -39,3 +39,9 @@ def decode_delimited(data, index):
     index += length
     res = data[last:index]
     return res, index
+
+
+def encode_key(field, wire):
+    "return the encoded field and wire type"
+
+    return (field << 3) | wire

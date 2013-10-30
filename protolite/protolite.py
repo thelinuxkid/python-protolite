@@ -25,15 +25,10 @@ struct_formats = dict([
 ])
 
 
+
 def encode_struct(num, fmt):
     values = struct.pack(fmt, num)
     return [ord(v) for v in values]
-
-
-def encode_key(field, wire):
-    "return the encoded field and wire type"
-
-    return (field << 3) | wire
 
 
 def encode_varint(num):
@@ -176,7 +171,9 @@ def _encode(proto, msg):
         _type = info['type']
         if _type in varint_types:
             # TODO support int32, int64, uint32, uint64, sint32, sint64
-            key = encode_key(field, 0)
+            # optimization: avoid function calls to encode_key
+            key = (field << 3) | 0
+            # end optimization
             key = encode_varint(key)
             if _type == 'bool':
                 v = int(v)
@@ -184,7 +181,9 @@ def _encode(proto, msg):
             data += key + value
             continue
         if _type in _64bit_types:
-            key = encode_key(field, 1)
+            # optimization: avoid function calls to encode_key
+            key = (field << 3) | 1
+            # end optimization
             key = encode_varint(key)
             fmt = struct_formats[_type]
             value = encode_struct(v, fmt)
@@ -192,7 +191,9 @@ def _encode(proto, msg):
             continue
         if _type in delimited_types:
             # TODO support bytes and packed repeated fields
-            key = encode_key(field, 2)
+            # optimization: avoid function calls to encode_key
+            key = (field << 3) | 2
+            # end optimization
             key = encode_varint(key)
             if _type == 'embedded':
                 value = _encode(info['message'], v)
@@ -208,7 +209,9 @@ def _encode(proto, msg):
                     data += key + length + value
             continue
         if _type in _32bit_types:
-            key = encode_key(field, 5)
+            # optimization: avoid function calls to encode_key
+            key = (field << 3) | 5
+            # end optimization
             key = encode_varint(key)
             fmt = struct_formats[_type]
             value = encode_struct(v, fmt)

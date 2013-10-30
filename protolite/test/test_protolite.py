@@ -128,7 +128,7 @@ def test_decode_key_simple():
 
 
 def test_encode_key_simple():
-    key = protolite.encode_key(1,0)
+    key = encoder.encode_key(1,0)
     equal(8, key)
 
 
