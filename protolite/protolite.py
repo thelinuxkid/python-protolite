@@ -110,6 +110,9 @@ def _decode(proto, data):
     index = 0
     length = len(data)
     msg = dict()
+    # optmization: use local variable inside function
+    join = ''.join
+    # end optimization
     while index < length:
         value, index = decode_varint(data, index)
         field, wire = decode_key(value)
@@ -136,7 +139,7 @@ def _decode(proto, data):
             if _type == 'embedded':
                 msg[name] = _decode(info['message'], item)
             if _type == 'string':
-                msg[name] = ''.join([chr(i) for i in item])
+                msg[name] = join([chr(i) for i in item])
             if _type == 'repeated':
                 if name not in msg:
                     msg[name] = []
