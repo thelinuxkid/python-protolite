@@ -25,12 +25,6 @@ struct_formats = dict([
 ])
 
 
-
-def encode_struct(num, fmt):
-    values = struct.pack(fmt, num)
-    return [ord(v) for v in values]
-
-
 def encode_varint(num):
     "return an encoded int32, int64, uint32, uint64, sint32, sint64, bool, or enum"
 
@@ -186,7 +180,9 @@ def _encode(proto, msg):
             # end optimization
             key = encode_varint(key)
             fmt = struct_formats[_type]
-            value = encode_struct(v, fmt)
+            # optimization: avoid function call to encode_struct
+            value = [ord(b) for b in struct.pack(fmt, v)]
+            # end optimization
             data += key + value
             continue
         if _type in delimited_types:
@@ -214,7 +210,9 @@ def _encode(proto, msg):
             # end optimization
             key = encode_varint(key)
             fmt = struct_formats[_type]
-            value = encode_struct(v, fmt)
+            # optimization: avoid function call to encode_struct
+            value = [ord(b) for b in struct.pack(fmt, v)]
+            # end optimization
             data += key + value
             continue
     return data

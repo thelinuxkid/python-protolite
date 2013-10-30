@@ -155,7 +155,7 @@ def test_decode_32bit_simple():
 
 
 def test_encode_32bit_simple():
-    value = protolite.encode_struct(-122.39293670654297, '<f')
+    value = encoder.encode_struct(-122.39293670654297, '<f')
     equal([47, 201, 244, 194], value)
 
 
@@ -171,7 +171,7 @@ def test_decode_64bit_simple():
 
 
 def test_encode_64bit_simple():
-    value = protolite.encode_struct(-122.39293670654297, '<d')
+    value = encoder.encode_struct(-122.39293670654297, '<d')
     equal([0, 0, 0, 224, 37, 153, 94, 192], value)
 
 

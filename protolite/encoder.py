@@ -45,3 +45,8 @@ def encode_key(field, wire):
     "return the encoded field and wire type"
 
     return (field << 3) | wire
+
+
+def encode_struct(num, fmt):
+    values = struct.pack(fmt, num)
+    return [ord(v) for v in values]
