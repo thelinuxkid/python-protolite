@@ -85,7 +85,17 @@ def encode_varint(num):
 def decode_delimited(data, index):
     "return a string, bytes, embedded messages, or packed repeated fields"
 
-    length, index = decode_varint(data, index)
+    # optimization: avoid function call to decode_varint
+    item = 128
+    length = 0
+    left = 0
+    while item & 128:
+        item = data[index]
+        index += 1
+        value = (item & 127) << left
+        length += value
+        left += 7
+    # end optimization
     last = index
     index += length
     res = data[last:index]
@@ -114,7 +124,17 @@ def _decode(proto, data):
     join = ''.join
     # end optimization
     while index < length:
-        value, index = decode_varint(data, index)
+        # optimization: avoid function call to decode_varint
+        item = 128
+        value = 0
+        left = 0
+        while item & 128:
+            item = data[index]
+            index += 1
+            _value = (item & 127) << left
+            value += _value
+            left += 7
+        # end optimization
         field, wire = decode_key(value)
         if field not in proto:
             continue
@@ -123,7 +143,17 @@ def _decode(proto, data):
         name = info['name']
         if wire == 0:
             # TODO support int32, int64, uint32, uint64, sint32, sint64
-            num, index = decode_varint(data, index)
+            # optimization: avoid function call to decode_varint
+            item = 128
+            num = 0
+            left = 0
+            while item & 128:
+                item = data[index]
+                index += 1
+                value = (item & 127) << left
+                num += value
+                left += 7
+            # end optimization
             if _type == 'bool':
                 num = bool(num)
             msg[name] = num
