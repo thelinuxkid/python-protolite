@@ -30,15 +30,6 @@ def encode_struct(num, fmt):
     return [ord(v) for v in values]
 
 
-def decode_struct(data, index, bits, fmt):
-    last = index
-    index += bits
-    values = [chr(i) for i in data[last:index]]
-    values = ''.join(values)
-    num = struct.unpack(fmt, values)
-    return num[0], index
-
-
 def encode_key(field, wire):
     "return the encoded field and wire type"
 
@@ -140,8 +131,13 @@ def _decode(proto, data):
             continue
         if wire == 1:
             fmt = struct_formats[_type]
-            num, index = decode_struct(data, index, 8, fmt)
-            msg[name] = num
+            # optimization: avoid function call to decode_struct
+            last = index
+            index += 8
+            values = [chr(i) for i in data[last:index]]
+            values = ''.join(values)
+            num = struct.unpack(fmt, values)
+            msg[name] = num[0]
             continue
         if wire == 2:
             # TODO support bytes and packed repeated fields
@@ -157,8 +153,12 @@ def _decode(proto, data):
             continue
         if wire == 5:
             fmt = struct_formats[_type]
-            num, index = decode_struct(data, index, 4, fmt)
-            msg[name] = num
+            last = index
+            index += 4
+            values = [chr(i) for i in data[last:index]]
+            values = ''.join(values)
+            num = struct.unpack(fmt, values)
+            msg[name] = num[0]
             continue
         raise ValueError(
           'invalid wire type: {wire}'.format(wire=wire)

@@ -144,7 +144,7 @@ def test_encode_varint_simple():
 
 
 def test_decode_32bit_simple():
-    value, index = protolite.decode_struct(
+    value, index = encoder.decode_struct(
         [47, 201, 244, 194],
         0,
         4,
@@ -160,7 +160,7 @@ def test_encode_32bit_simple():
 
 
 def test_decode_64bit_simple():
-    value, index = protolite.decode_struct(
+    value, index = encoder.decode_struct(
         [0, 0, 0, 224, 37, 153, 94, 192],
         0,
         8,
