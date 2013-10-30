@@ -122,7 +122,7 @@ class encoding(object):
 
 
 def test_decode_key_simple():
-    field, wire = protolite.decode_key(8)
+    field, wire = encoder.decode_key(8)
     equal(1, field)
     equal(0, wire)
 

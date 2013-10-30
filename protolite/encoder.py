@@ -11,3 +11,9 @@ def decode_varint(data, index):
         num += value
         left += 7
     return num, index
+
+
+def decode_key(key):
+    "return a tuple containing the field and the wire type"
+
+    return key >> 3, key & 7

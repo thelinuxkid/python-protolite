@@ -39,16 +39,11 @@ def decode_struct(data, index, bits, fmt):
     return num[0], index
 
 
-def decode_key(key):
-    "return a tuple containing the field and the wire type"
-
-    return key >> 3, key & 7
-
-
 def encode_key(field, wire):
     "return the encoded field and wire type"
 
     return (field << 3) | wire
+
 
 def encode_varint(num):
     "return an encoded int32, int64, uint32, uint64, sint32, sint64, bool, or enum"
@@ -108,18 +103,19 @@ def _decode(proto, data):
     join = ''.join
     # end optimization
     while index < length:
-        # optimization: avoid function call to decode_varint
+        # optimization: avoid function call to decode_varint, decode_key
         item = 128
-        value = 0
+        key = 0
         left = 0
         while item & 128:
             item = data[index]
             index += 1
-            _value = (item & 127) << left
-            value += _value
+            value = (item & 127) << left
+            key += value
             left += 7
+        field = key >> 3
+        wire = key & 7
         # end optimization
-        field, wire = decode_key(value)
         if field not in proto:
             continue
         info = proto[field]
