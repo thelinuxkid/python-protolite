@@ -1,6 +1,6 @@
 from nose.tools import eq_ as equal
 
-from protolite import protolite
+from protolite import protolite, encoder
 
 
 class decoding(object):
@@ -133,7 +133,7 @@ def test_encode_key_simple():
 
 
 def test_decode_varint_simple():
-    value, index = protolite.decode_varint([168, 172, 2], 0)
+    value, index = encoder.decode_varint([168, 172, 2], 0)
     equal(38440, value)
     equal(3, index)
 
