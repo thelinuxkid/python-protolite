@@ -52,26 +52,6 @@ def encode_varint(num):
     return values
 
 
-def decode_delimited(data, index):
-    "return a string, bytes, embedded messages, or packed repeated fields"
-
-    # optimization: avoid function call to decode_varint
-    item = 128
-    length = 0
-    left = 0
-    while item & 128:
-        item = data[index]
-        index += 1
-        value = (item & 127) << left
-        length += value
-        left += 7
-    # end optimization
-    last = index
-    index += length
-    res = data[last:index]
-    return res, index
-
-
 def encode_delimited(item):
     "return an encoded string, bytes, embedded messages, or packed repeated fields"
 
@@ -94,7 +74,7 @@ def _decode(proto, data):
     join = ''.join
     # end optimization
     while index < length:
-        # optimization: avoid function call to decode_varint, decode_key
+        # optimization: avoid function calls to decode_varint, decode_key
         item = 128
         key = 0
         left = 0
@@ -138,10 +118,24 @@ def _decode(proto, data):
             values = ''.join(values)
             num = struct.unpack(fmt, values)
             msg[name] = num[0]
+            # end optimization
             continue
         if wire == 2:
             # TODO support bytes and packed repeated fields
-            item, index = decode_delimited(data, index)
+            # optimization: avoid function call to decode_delimited
+            item = 128
+            _length = 0
+            left = 0
+            while item & 128:
+                item = data[index]
+                index += 1
+                value = (item & 127) << left
+                _length += value
+                left += 7
+            last = index
+            index += _length
+            item = data[last:index]
+            # end optimization
             if _type == 'embedded':
                 msg[name] = _decode(info['message'], item)
             if _type == 'string':
@@ -153,12 +147,14 @@ def _decode(proto, data):
             continue
         if wire == 5:
             fmt = struct_formats[_type]
+            # optimization: avoid function call to decode_struct
             last = index
             index += 4
             values = [chr(i) for i in data[last:index]]
             values = ''.join(values)
             num = struct.unpack(fmt, values)
             msg[name] = num[0]
+            # end optimization
             continue
         raise ValueError(
           'invalid wire type: {wire}'.format(wire=wire)

@@ -177,7 +177,7 @@ def test_encode_64bit_simple():
 
 def test_decode_delimited_simple():
     data = [7, 116, 101, 115, 116, 105, 110, 103]
-    value, index = protolite.decode_delimited(data, 0)
+    value, index = encoder.decode_delimited(data, 0)
     equal([116, 101, 115, 116, 105, 110, 103], value)
     equal(8, index)
 

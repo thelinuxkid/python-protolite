@@ -21,6 +21,7 @@ def decode_key(key):
 
     return key >> 3, key & 7
 
+
 def decode_struct(data, index, bits, fmt):
     last = index
     index += bits
@@ -28,3 +29,13 @@ def decode_struct(data, index, bits, fmt):
     values = ''.join(values)
     num = struct.unpack(fmt, values)
     return num[0], index
+
+
+def decode_delimited(data, index):
+    "return a string, bytes, embedded messages, or packed repeated fields"
+
+    length, index = decode_varint(data, index)
+    last = index
+    index += length
+    res = data[last:index]
+    return res, index
