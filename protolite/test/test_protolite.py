@@ -139,7 +139,7 @@ def test_decode_varint_simple():
 
 
 def test_encode_varint_simple():
-    value = protolite.encode_varint(38440)
+    value = encoder.encode_varint(38440)
     equal([168, 172, 2], value)
 
 
@@ -183,7 +183,7 @@ def test_decode_delimited_simple():
 
 
 def test_encode_delimited_simple():
-    value = protolite.encode_delimited('testing')
+    value = encoder.encode_delimited('testing')
     want = [7, 116, 101, 115, 116, 105, 110, 103]
     equal(want, value)
 

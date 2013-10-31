@@ -50,3 +50,28 @@ def encode_key(field, wire):
 def encode_struct(num, fmt):
     values = struct.pack(fmt, num)
     return [ord(v) for v in values]
+
+
+def encode_varint(num):
+    "return an encoded int32, int64, uint32, uint64, sint32, sint64, bool, or enum"
+
+    value =  num & 127
+    _next = (num & (127 << 7)) >> 7
+    shift = 14
+    values = []
+    while _next:
+        values.append(value | 128)
+        value = _next
+        _next = (num & (127 << shift)) >> shift
+        shift += 7
+    values.append(value)
+    return values
+
+
+def encode_delimited(item):
+    "return an encoded string, bytes, embedded messages, or packed repeated fields"
+
+    length = len(item)
+    length = encode_varint(length)
+    data = [ord(i) for i in item]
+    return length + data

@@ -41,15 +41,6 @@ def encode_varint(num):
     return values
 
 
-def encode_delimited(item):
-    "return an encoded string, bytes, embedded messages, or packed repeated fields"
-
-    length = len(item)
-    length = encode_varint(length)
-    data = [ord(i) for i in item]
-    return length + data
-
-
 def decode(proto, data):
     data = [ord(d) for d in data]
     return _decode(proto, data)
@@ -196,8 +187,12 @@ def _encode(proto, msg):
                 length = encode_varint(len(value))
                 data += key + length + value
             if _type == 'string':
-                value = encode_delimited(v)
-                data += key + value
+                # optimization: avoid function calls to encode_delimited
+                length = len(v)
+                length = encode_varint(length)
+                value = [ord(i) for i in v]
+                data += key + length + value
+                # end optimization
             if _type == 'repeated':
                 for d in v:
                     value = _encode(info['message'], d)
