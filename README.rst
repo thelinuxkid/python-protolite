@@ -71,7 +71,7 @@ message you would do something like::
 
     import messages
 
-    msg_enc = {'user_id': 123, 'type': messages.user_type.STANDARD}
+    msg_enc = {'user_id': 123, 'type': messages.user.STANDARD}
     data = messages.user.encode(msg_enc)
 
 As you can see, ``python-protolite`` changes camel-case variable names to
