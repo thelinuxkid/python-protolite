@@ -141,15 +141,23 @@ def parse(tree, prefixes=[]):
     decoding = OrderedDict()
     dec_refs = DefaultOrderedDict(OrderedDict)
     enc_refs = DefaultOrderedDict(OrderedDict)
-    enums = OrderedDict()
+    enums = DefaultOrderedDict(OrderedDict)
     for name, fields in proto.items():
+        enums[name]['enums'] = OrderedDict()
         _fields = DefaultOrderedDict(OrderedDict)
         for field, info in fields.items():
             if info['type'] == 'enum_literal':
-                enum = OrderedDict(
-                    [(v,k) for k,v in info.items() if k != 'type']
-                )
-                enums[field] = enum
+                for value, enum in info.items():
+                    if value == 'type':
+                        continue
+                    if enum in enums[name]['enums']:
+                        raise ValueError(
+                            '{enum} already exists in {name}'.format(
+                                enum=enum,
+                                name=name,
+                            ),
+                        )
+                    enums[name]['enums'][enum] = value
                 continue
             if info['type'] in ['embedded', 'repeated']:
                 reference = info.pop('message')
@@ -260,14 +268,6 @@ def generate(protos, output, prefixes):
             for _import in imports:
                 fp.write('import {_import}\n'.format(_import=_import))
             fp.write('\n')
-            for name, enums in enums.items():
-                name = underscore(name, prefixes=prefixes)
-                fp.write('class {name}(object):'.format(name=name))
-                for enum, value in enums.items():
-                    fp.write(
-                        '\n    {enum} = {value}'.format(enum=enum, value=value),
-                    )
-                fp.write('\n\n')
             for name, _fields in attrs.items():
                 fp.write('\nclass {name}(object):'.format(name=name))
                 for field, value in _fields.items():
@@ -295,4 +295,14 @@ def generate(protos, output, prefixes):
                         field=field,
                     )
                 )
+            fp.write('\n\n')
+            for name, enums in enums.items():
+                for enum, value in enums['enums'].items():
+                    fp.write(
+                        '{name}.{enum} = {value}\n'.format(
+                            name=underscore(name, prefixes=prefixes),
+                            enum=enum,
+                            value=value,
+                        )
+                    )
         done[module] = fields
