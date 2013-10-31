@@ -39,7 +39,7 @@ def parse_args():
         nargs='+',
         action='append',
         type=str,
-        default=None,
+        default=[],
     )
     return parser.parse_args()
 
