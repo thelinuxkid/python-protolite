@@ -147,17 +147,11 @@ def parse(tree, prefixes=[]):
         _fields = DefaultOrderedDict(OrderedDict)
         for field, info in fields.items():
             if info['type'] == 'enum_literal':
+                enums[name]['enums'][field] = OrderedDict()
                 for value, enum in info.items():
                     if value == 'type':
                         continue
-                    if enum in enums[name]['enums']:
-                        raise ValueError(
-                            '{enum} already exists in {name}'.format(
-                                enum=enum,
-                                name=name,
-                            ),
-                        )
-                    enums[name]['enums'][enum] = value
+                    enums[name]['enums'][field][enum] = value
                 continue
             if info['type'] in ['embedded', 'repeated']:
                 reference = info.pop('message')
@@ -276,7 +270,7 @@ def generate(protos, output, prefixes):
                     fp.write(
                         '\n    {field} = {value}'.format(field=field, value=value),
                     )
-                fp.write('\n')
+                fp.write('\n\n')
             write_references(
                 fp,
                 references,
@@ -285,7 +279,7 @@ def generate(protos, output, prefixes):
                 prefixes,
             )
             fp.write(
-                '\n{convenience}\n'.format(convenience=convenience_coder),
+                '\n{convenience}\n\n'.format(convenience=convenience_coder),
             )
             for field in fields:
                 field = underscore(field, prefixes=prefixes)
@@ -296,13 +290,34 @@ def generate(protos, output, prefixes):
                     )
                 )
             fp.write('\n\n')
-            for name, enums in enums.items():
-                for enum, value in enums['enums'].items():
+            for name, _enums in enums.items():
+                for values in _enums['enums'].values():
+                    for enum, value in values.items():
+                        fp.write(
+                            '{name}.{enum} = {value}\n'.format(
+                                name=underscore(name, prefixes=prefixes),
+                                enum=enum,
+                                value=value,
+                            )
+                        )
+            fp.write('\n')
+            for field in fields:
+                for name, values in enums[field]['enums'].items():
+                    _field = underscore(field, prefixes=prefixes)
+                    _name = underscore(name, prefixes=prefixes)
                     fp.write(
-                        '{name}.{enum} = {value}\n'.format(
-                            name=underscore(name, prefixes=prefixes),
-                            enum=enum,
-                            value=value,
+                        '\n{_field}.{_name} = dict()\n'.format(
+                            _field=_field,
+                            _name=_name,
                         )
                     )
+                    for enum, value in values.items():
+                        fp.write(
+                            '{_field}.{_name}[{value}] = "{enum}"\n'.format(
+                                _field=_field,
+                                _name=_name,
+                                value=value,
+                                enum=enum,
+                            )
+                        )
         done[module] = fields
