@@ -11,27 +11,25 @@ def parse_args():
         description='create alternate Python protobuf files',
     )
     parser.add_argument(
-        '-v',
-        '--verbose',
-        action='store_true',
-        default=False,
-        help='output DEBUG logging statements (default: %(default)s)',
-    )
-    parser.add_argument(
-        '--protos',
+        'protos',
         help='path(s) to the protocol buffer definition file(s)',
-        required=True,
         metavar='PATH',
         nargs='+',
         action='append',
         type=str,
     )
     parser.add_argument(
-        '--output',
+        'output',
         help='path to the directory in which to store the results',
-        required=True,
         metavar='PATH',
         type=str,
+    )
+    parser.add_argument(
+        '-v',
+        '--verbose',
+        action='store_true',
+        default=False,
+        help='output DEBUG logging statements (default: %(default)s)',
     )
     parser.add_argument(
         '--prefixes',
