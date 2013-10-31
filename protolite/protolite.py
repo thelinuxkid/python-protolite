@@ -10,11 +10,9 @@ varint_types = [
   'bool',
   'enum',
 ]
-varints = ['int32', 'int64', 'uint32', 'uint64', 'sint32', 'sint64']
 _64bit_types = ['fixed64', 'sfixed64', 'double']
 delimited_types = ['string', 'bytes', 'embedded', 'packed', 'repeated']
 _32bit_types = ['fixed32', 'sfixed32', 'float']
-
 struct_formats = dict([
     ('fixed64', '<Q'),
     ('sfixed64', '<q'),
@@ -23,6 +21,7 @@ struct_formats = dict([
     ('sfixed32', '<i'),
     ('float', '<f'),
 ])
+joinstr = ''.join
 
 
 def decode(proto, data):
@@ -34,9 +33,6 @@ def _decode(proto, data):
     index = 0
     length = len(data)
     msg = dict()
-    # optmization: use local variable inside function
-    join = ''.join
-    # end optimization
     while index < length:
         # optimization: avoid function calls to decode_varint, decode_key
         item = 128
@@ -79,7 +75,7 @@ def _decode(proto, data):
             last = index
             index += 8
             values = [chr(i) for i in data[last:index]]
-            values = ''.join(values)
+            values = joinstr(values)
             num = struct.unpack(fmt, values)
             msg[name] = num[0]
             # end optimization
@@ -103,7 +99,7 @@ def _decode(proto, data):
             if _type == 'embedded':
                 msg[name] = _decode(info['message'], item)
             if _type == 'string':
-                msg[name] = join([chr(i) for i in item])
+                msg[name] = joinstr([chr(i) for i in item])
             if _type == 'repeated':
                 if name not in msg:
                     msg[name] = []
