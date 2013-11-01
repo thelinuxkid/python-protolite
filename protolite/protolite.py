@@ -53,7 +53,7 @@ def _decode(proto, data):
         _type = info['type']
         name = info['name']
         if wire == 0:
-            # TODO support int32, int64, uint32, uint64, sint32, sint64
+            # TODO support int32, int64, uint32, sint32, sint64
             # optimization: avoid function call to decode_varint
             item = 128
             num = 0
@@ -135,37 +135,33 @@ def _encode(proto, msg):
         field = info['field']
         _type = info['type']
         if _type in varint_types:
-            # TODO support int32, int64, uint32, uint64, sint32, sint64
+            # TODO support int32, int64, uint32, sint32, sint64
             # optimization: avoid function calls to encode_key
             key = (field << 3) | 0
             # end optimization
             # optimization: avoid function calls to encode_varint
-            _value =  key & 127
-            _next = (key & (127 << 7)) >> 7
-            shift = 14
-            values = []
+            _next = 1
+            _value = key
+            key = []
             while _next:
-                values.append(_value | 128)
+                _next = _value >> 7
+                shift = 128 if _next else 0
+                part = (_value & 127) | shift
+                key.append(part)
                 _value = _next
-                _next = (key & (127 << shift)) >> shift
-                shift += 7
-            values.append(_value)
-            key = values
             # end optimization
             if _type == 'bool':
                 v = int(v)
             # optimization: avoid function calls to encode_varint
-            _value =  v & 127
-            _next = (v & (127 << 7)) >> 7
-            shift = 14
+            _next = 1
+            _value = v
             values = []
             while _next:
-                values.append(_value | 128)
+                _next = _value >> 7
+                shift = 128 if _next else 0
+                part = (_value & 127) | shift
+                values.append(part)
                 _value = _next
-                _next = (v & (127 << shift)) >> shift
-                shift += 7
-            values.append(_value)
-            # end optimization
             data += key + values
             continue
         if _type in _64bit_types:
@@ -173,17 +169,15 @@ def _encode(proto, msg):
             key = (field << 3) | 1
             # end optimization
             # optimization: avoid function calls to encode_varint
-            _value =  key & 127
-            _next = (key & (127 << 7)) >> 7
-            shift = 14
-            values = []
+            _next = 1
+            _value = key
+            key = []
             while _next:
-                values.append(_value | 128)
+                _next = _value >> 7
+                shift = 128 if _next else 0
+                part = (_value & 127) | shift
+                key.append(part)
                 _value = _next
-                _next = (key & (127 << shift)) >> shift
-                shift += 7
-            values.append(_value)
-            key = values
             # end optimization
             fmt = struct_formats[_type]
             # optimization: avoid function call to encode_struct
@@ -197,50 +191,44 @@ def _encode(proto, msg):
             key = (field << 3) | 2
             # end optimization
             # optimization: avoid function calls to encode_varint
-            _value =  key & 127
-            _next = (key & (127 << 7)) >> 7
-            shift = 14
-            values = []
+            _next = 1
+            _value = key
+            key = []
             while _next:
-                values.append(_value | 128)
+                _next = _value >> 7
+                shift = 128 if _next else 0
+                part = (_value & 127) | shift
+                key.append(part)
                 _value = _next
-                _next = (key & (127 << shift)) >> shift
-                shift += 7
-            values.append(_value)
-            key = values
             # end optimization
             if _type == 'embedded':
                 value = _encode(info['message'], v)
                 length = len(value)
                 # optimization: avoid function calls to encode_varint
-                _value =  length & 127
-                _next = (length & (127 << 7)) >> 7
-                shift = 14
-                values = []
+                _next = 1
+                _value = length
+                length = []
                 while _next:
-                    values.append(_value | 128)
+                    _next = _value >> 7
+                    shift = 128 if _next else 0
+                    part = (_value & 127) | shift
+                    length.append(part)
                     _value = _next
-                    _next = (length & (127 << shift)) >> shift
-                    shift += 7
-                values.append(_value)
-                length = values
                 # end optimization
                 data += key + length + value
             if _type == 'string':
                 # optimization: avoid function calls to encode_delimited
                 length = len(v)
                 # optimization: avoid function calls to encode_varint
-                value =  length & 127
-                _next = (length & (127 << 7)) >> 7
-                shift = 14
-                values = []
+                _next = 1
+                _value = length
+                length = []
                 while _next:
-                    values.append(value | 128)
-                    value = _next
-                    _next = (length & (127 << shift)) >> shift
-                    shift += 7
-                values.append(value)
-                length = values
+                    _next = _value >> 7
+                    shift = 128 if _next else 0
+                    part = (_value & 127) | shift
+                    length.append(part)
+                    _value = _next
                 # end optimization
                 value = [ord(i) for i in v]
                 data += key + length + value
@@ -250,17 +238,15 @@ def _encode(proto, msg):
                     value = _encode(info['message'], d)
                     length = len(value)
                     # optimization: avoid function calls to encode_varint
-                    _value =  length & 127
-                    _next = (length & (127 << 7)) >> 7
-                    shift = 14
-                    values = []
+                    _next = 1
+                    _value = length
+                    length = []
                     while _next:
-                        values.append(_value | 128)
+                        _next = _value >> 7
+                        shift = 128 if _next else 0
+                        part = (_value & 127) | shift
+                        length.append(part)
                         _value = _next
-                        _next = (length & (127 << shift)) >> shift
-                        shift += 7
-                    values.append(_value)
-                    length = values
                     # end optimization
                     data += key + length + value
             continue
@@ -269,17 +255,15 @@ def _encode(proto, msg):
             key = (field << 3) | 5
             # end optimization
             # optimization: avoid function calls to encode_varint
-            _value =  key & 127
-            _next = (key & (127 << 7)) >> 7
-            shift = 14
-            values = []
+            _next = 1
+            _value = length
+            length = []
             while _next:
-                values.append(_value | 128)
+                _next = _value >> 7
+                shift = 128 if _next else 0
+                part = (_value & 127) | shift
+                length.append(part)
                 _value = _next
-                _next = (key & (127 << shift)) >> shift
-                shift += 7
-            values.append(_value)
-            key = values
             # end optimization
             fmt = struct_formats[_type]
             # optimization: avoid function call to encode_struct

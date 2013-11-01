@@ -55,16 +55,14 @@ def encode_struct(num, fmt):
 def encode_varint(num):
     "return an encoded int32, int64, uint32, uint64, sint32, sint64, bool, or enum"
 
-    value =  num & 127
-    _next = (num & (127 << 7)) >> 7
-    shift = 14
+    _next = 1
     values = []
     while _next:
-        values.append(value | 128)
-        value = _next
-        _next = (num & (127 << shift)) >> shift
-        shift += 7
-    values.append(value)
+        _next = num >> 7
+        shift = 128 if _next else 0
+        part = (num & 127) | shift
+        values.append(part)
+        num = _next
     return values
 
 

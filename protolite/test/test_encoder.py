@@ -25,6 +25,18 @@ def test_encode_varint_simple():
     equal([168, 172, 2], value)
 
 
+def test_decode_varint_uint64():
+    data = [128, 160, 136, 132, 128, 138, 165, 254, 13]
+    value, index = encoder.decode_varint(data, 0)
+    equal(1007843487950966784L, value)
+    equal(9, index)
+
+
+def test_encode_varint_uint64():
+    value = encoder.encode_varint(1007843487950966784L)
+    equal([128, 160, 136, 132, 128, 138, 165, 254, 13], value)
+
+
 def test_decode_32bit_simple():
     value, index = encoder.decode_struct(
         [47, 201, 244, 194],

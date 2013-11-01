@@ -384,3 +384,42 @@ def test_encode_varint_key():
     data = protolite.encode(enc_proto, msg)
     res = protolite.decode(dec_proto, data)
     equal(msg, res)
+
+
+def test_decode_varint_uint64():
+    dec_proto = dict([
+        (2, dict([
+            ('type', 'uint64'),
+            ('name', 'foo_id'),
+        ])),
+    ])
+    msg = dict([
+        ('foo_id', 1007843487950966784L),
+    ])
+    data = '\x10\x80\xa0\x88\x84\x80\x8a\xa5\xfe\r'
+    msg = protolite.decode(dec_proto, data)
+    want = dict([
+        ('foo_id', 1007843487950966784L),
+    ])
+    equal(want, msg)
+
+
+def test_encode_varint_uint64():
+    enc_proto = dict([
+        ('foo_id', dict([
+            ('type', 'uint64'),
+            ('field', 2),
+        ])),
+    ])
+    dec_proto = dict([
+        (2, dict([
+            ('type', 'uint64'),
+            ('name', 'foo_id'),
+        ])),
+    ])
+    msg = dict([
+        ('foo_id', 1007843487950966784L),
+    ])
+    data = protolite.encode(enc_proto, msg)
+    res = protolite.decode(dec_proto, data)
+    equal(msg, res)
