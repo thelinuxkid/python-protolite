@@ -71,7 +71,7 @@ message you would do something like::
 
     import messages
 
-    msg_enc = {'user_id': 123, 'type': messages.user.STANDARD}
+    msg_enc = {'user_id': 123, 'type': messages.user_type.STANDARD}
     data = messages.user.encode(msg_enc)
 
 As you can see, ``python-protolite`` changes camel-case variable names to
@@ -83,6 +83,21 @@ something similar::
     msg_dec = messages.user.decode(data)
 
 The variable msg_dec will be equal to msg_enc.
+
+printing
+--------
+
+The message objects also contain a pretty print method. Calling
+``message.user.pprint(msg_enc)`` would produce::
+
+    {
+        "type": "STANDARD",
+        "user_id": 123
+    }
+
+
+You can pass the keyword argument ``stream`` to ``pprint`` to write to
+a stream different than sys.stdout.
 
 parser
 ======
