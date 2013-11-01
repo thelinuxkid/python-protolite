@@ -22,15 +22,36 @@ ignore_types = [
 
 convenience_coder = """
 class convenience_coder(object):
+
     def __init__(self, decoding, encoding):
         self.decoding = decoding
         self.encoding = encoding
 
+
     def decode(self, message):
         return protolite.decode(self.decoding, message)
 
+
     def encode(self, message):
         return protolite.encode(self.encoding, message)
+
+
+    def _pprint(self, message, encoding):
+        fields = OrderedDict()
+        for k,v in message.items():
+            if encoding[k]['type'] == 'enum':
+                v = encoding[k]['message'][v]
+            if encoding[k]['type'] in ['embedded', 'repeated']:
+                v = self._pprint(v, encoding[k]['message'])
+            fields[k] = v
+        return fields
+
+
+    def pprint(self, message, encoding=None, stream=sys.stdout):
+        if encoding is None:
+            encoding = self.encoding
+        fields = self._pprint(message, encoding)
+        stream.write(json.dumps(fields, indent=8, separators=(',', ': ')))
 """
 
 
@@ -113,18 +134,17 @@ def _parse(tree):
         fields['type'] = field_type.getText()
         if field_type.getType() == proto_parser.IDENTIFIER:
             _tree = tree.getParent()
+            fields['message'] = fields['type']
+            fields['type'] = 'embedded'
+            if scope.getText() == 'repeated':
+                fields['type'] = 'repeated'
             while _tree:
                 for child in _tree.children:
                     if (child.getType() == proto_parser.ENUM_LITERAL and
                         child.children[0].getText() == field_type.getText()
                     ):
                         fields['type'] = 'enum'
-                        return field_number, fields
                 _tree = _tree.getParent()
-            fields['message'] = fields['type']
-            fields['type'] = 'embedded'
-            if scope.getText() == 'repeated':
-                fields['type'] = 'repeated'
         return field_number, fields
 
     if _type == proto_parser.ENUM_FIELD:
@@ -143,16 +163,19 @@ def parse(tree, prefixes=[]):
     enc_refs = DefaultOrderedDict(OrderedDict)
     enums = DefaultOrderedDict(OrderedDict)
     for name, fields in proto.items():
-        enums[name]['enums'] = OrderedDict()
+        enums[name]['enums'] = DefaultOrderedDict(OrderedDict)
+        enums[name]['fields'] = DefaultOrderedDict(list)
         _fields = DefaultOrderedDict(OrderedDict)
         for field, info in fields.items():
             if info['type'] == 'enum_literal':
-                enums[name]['enums'][field] = OrderedDict()
                 for value, enum in info.items():
                     if value == 'type':
                         continue
                     enums[name]['enums'][field][enum] = value
                 continue
+            if info['type'] == 'enum':
+                reference = info.pop('message')
+                enums[name]['fields'][info['name']] = reference
             if info['type'] in ['embedded', 'repeated']:
                 reference = info.pop('message')
                 dec_refs[name][field] = reference
@@ -225,7 +248,7 @@ def write_references(fp, references, fields, imports, prefixes):
                             break
                     if not depend:
                         raise ValueError(
-                            'attribute is not in any module: {_message}'.format(
+                            'attribute is not in any module: {_reference}'.format(
                                 _reference=_reference,
                             )
                         )
@@ -258,7 +281,13 @@ def generate(protos, output, prefixes):
         depends = dict([(k,v) for k,v in done.items() if k in imports])
         path = output_path(path, output)
         with open(path, 'w') as fp:
-            fp.write('import protolite\n')
+            _imports = [
+                'import sys\n',
+                'import json\n\n',
+                'from collections import OrderedDict\n\n',
+                'import protolite\n',
+            ]
+            fp.writelines(_imports)
             for _import in imports:
                 fp.write('import {_import}\n'.format(_import=_import))
             fp.write('\n')
@@ -271,13 +300,6 @@ def generate(protos, output, prefixes):
                         '\n    {field} = {value}'.format(field=field, value=value),
                     )
                 fp.write('\n\n')
-            write_references(
-                fp,
-                references,
-                fields,
-                depends,
-                prefixes,
-            )
             fp.write(
                 '\n{convenience}\n\n'.format(convenience=convenience_coder),
             )
@@ -320,4 +342,25 @@ def generate(protos, output, prefixes):
                                 enum=enum,
                             )
                         )
+            write_references(
+                fp,
+                references,
+                fields,
+                depends,
+                prefixes,
+            )
+            for field in fields:
+                for name, value in enums[field]['fields'].items():
+                    _field = underscore(field, prefixes=prefixes)
+                    _name = underscore(name, prefixes=prefixes)
+                    _value = underscore(value, prefixes=prefixes)
+                    fp.write(
+                        '\nencoding.{_field}["{_name}"]["message"] = '
+                        '{_field}.{_value}'.format(
+                            _field=_field,
+                            _name=_name,
+                            _value=_value,
+                        )
+                    )
+            fp.write('\n')
         done[module] = fields
