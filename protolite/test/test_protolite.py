@@ -405,6 +405,7 @@ def test_decode_varint_uint64():
 
 
 def test_encode_varint_uint64():
+    # Don't check against data string since protolite doesn't use OrderedDict
     enc_proto = dict([
         ('foo_id', dict([
             ('type', 'uint64'),
@@ -419,6 +420,45 @@ def test_encode_varint_uint64():
     ])
     msg = dict([
         ('foo_id', 1007843487950966784L),
+    ])
+    data = protolite.encode(enc_proto, msg)
+    res = protolite.decode(dec_proto, data)
+    equal(msg, res)
+
+def test_decode_float():
+    dec_proto = dict([
+        (1, dict([
+            ('type', 'float'),
+            ('name', 'foo'),
+        ])),
+    ])
+    msg = dict([
+        ('foo', -122.39293670654297),
+    ])
+    data = '\r/\xc9\xf4\xc2'
+    msg = protolite.decode(dec_proto, data)
+    want = dict([
+        ('foo', -122.39293670654297),
+    ])
+    equal(want, msg)
+
+
+def test_encode_float():
+    # Don't check against data string since protolite doesn't use OrderedDict
+    enc_proto = dict([
+        ('foo', dict([
+            ('type', 'float'),
+            ('field', 1),
+        ])),
+    ])
+    dec_proto = dict([
+        (1, dict([
+            ('type', 'float'),
+            ('name', 'foo'),
+        ])),
+    ])
+    msg = dict([
+        ('foo', -122.39293670654297),
     ])
     data = protolite.encode(enc_proto, msg)
     res = protolite.decode(dec_proto, data)

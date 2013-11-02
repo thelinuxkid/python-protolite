@@ -256,13 +256,13 @@ def _encode(proto, msg):
             # end optimization
             # optimization: avoid function calls to encode_varint
             _next = 1
-            _value = length
-            length = []
+            _value = key
+            key = []
             while _next:
                 _next = _value >> 7
                 shift = 128 if _next else 0
                 part = (_value & 127) | shift
-                length.append(part)
+                key.append(part)
                 _value = _next
             # end optimization
             fmt = struct_formats[_type]
