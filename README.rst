@@ -2,7 +2,39 @@
 protolite
 =========
 
-Lightweight implementation of Google's Protocol Buffers in Python
+Lightweight implementation of Google's Protocol Buffers in Python.
+
+In benchmarks, the protolite encoder ran twice as fast as
+Google's. Using Python's ``timeit`` module, the same data for both APIs was
+encoded and decoded 10000 times. The lowest time of three attempts was
+picked for each::
+
+    protobuf:  3.6064529418945312 seconds
+    protolite: 1.7224960327148438 seconds
+
+If we take the ratio of these two times we see that protolite was
+about two times faster than its counterpart.
+
+The ``benchmark`` directory in the github_ repository contains the
+files needed to re-run the tests . Try it on your platform::
+
+    python benchmark/benchmark.py
+
+You can also make changes to the ``benchmark/messages.proto`` file to
+create your own tests. You'll need to re-compile the protolite
+version afterwards::
+
+    python -c \
+        'from protolite.cli.protolitec import main; main()' \
+        benchmark/messages.proto benchmark
+
+Or, if you have already installed protolite::
+
+    python-protolitec benchmark/messages.proto benchmark
+
+Of course, you also need to re-run ``protoc``::
+
+    protoc --python_out=. benchmark/messages.proto
 
 description
 ===========
