@@ -42,7 +42,13 @@ class convenience_coder(object):
             if encoding[k]['type'] == 'enum':
                 v = encoding[k]['message'][v]
             if encoding[k]['type'] in ['embedded', 'repeated']:
-                v = self._pprint(v, encoding[k]['message'])
+                if isinstance(v, list):
+                    v = [
+                        self._pprint(_v, encoding[k]['message'])
+                        for _v in v
+                    ]
+                else:
+                    v = self._pprint(v, encoding[k]['message'])
             fields[k] = v
         return fields
 
