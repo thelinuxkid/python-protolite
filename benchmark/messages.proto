@@ -1,0 +1,26 @@
+message PhoneNumber {
+    optional uint32 countryCode = 1;
+    optional string number = 2;
+}
+
+
+message USAddress {
+    optional string street = 1;
+    optional string city = 2;
+    optional string state = 3;
+    optional string zipCode = 4;
+    optional string country = 5;
+}
+
+message User {
+    enum UserType {
+        STANDARD = 0;
+        ADMIN = 1;
+    }
+    optional uint64 userID = 1;
+    optional string firstName = 2;
+    optional string lastName = 3;
+    optional UserType userType = 4;
+    optional USAddress homeAddress = 5;
+    repeated PhoneNumber phoneNumbers = 6;
+}
