@@ -15,15 +15,26 @@ picked for each::
 If we take the ratio of these two times we see that protolite was
 about two times faster than its counterpart.
 
-The ``benchmark`` directory in the github_ repository contains the
-files needed to re-run the tests . Try it on your platform::
+Similarly, using Pypy we get about twice the speed::
 
-    python benchmark/benchmark.py
+    protobuf:  0.807873010635376 seconds
+    protolite: 0.4414529800415039 seconds
+
+The ``benchmark`` directory in the github_ repository contains the
+files needed to re-run the tests . Try it on your platform, but, keep
+your machine as quite as possible so as to not skew the results::
+
+    PYTHONPATH=$PYTHONPATH:$(pwd) python benchmark/benchmark.py
+
+Pass the --pypy flag if you want to use Pypy in order to warm up the
+Pypy JIT and get a more accurate result::
+
+    PYTHONPATH=$PYTHONPATH:$(pwd) pypy benchmark/benchmark.py --pypy
 
 You can also make changes to the ``benchmark/messages.proto`` file to create
 your own tests. You'll need to re-compile the ``messages.py`` and
 ``messages_pb2.py`` files in the ``benchmark`` directory afterwards by running
-the ``make`` command in the same directory.
+the ``make`` command inside the same directory.
 
 
 description
