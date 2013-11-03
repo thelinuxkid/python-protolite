@@ -20,21 +20,11 @@ files needed to re-run the tests . Try it on your platform::
 
     python benchmark/benchmark.py
 
-You can also make changes to the ``benchmark/messages.proto`` file to
-create your own tests. You'll need to re-compile the protolite
-version afterwards::
+You can also make changes to the ``benchmark/messages.proto`` file to create
+your own tests. You'll need to re-compile the ``messages.py`` and
+``messages_pb2.py`` files in the ``benchmark`` directory afterwards by running
+the ``make`` command in the same directory.
 
-    python -c \
-        'from protolite.cli.protolitec import main; main()' \
-        benchmark/messages.proto benchmark
-
-Or, if you have already installed protolite::
-
-    python-protolitec benchmark/messages.proto benchmark
-
-Of course, you also need to re-run ``protoc``::
-
-    protoc --python_out=. benchmark/messages.proto
 
 description
 ===========
