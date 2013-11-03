@@ -1,6 +1,7 @@
 import timeit
 import logging
 import json
+import argparse
 
 log = logging.getLogger(__name__)
 log.name = 'protolite benchmark'
@@ -129,11 +130,38 @@ def benchmark():
     print json.dumps(results, indent=2)
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description='benchmark protolite',
+    )
+    parser.add_argument(
+        '-p',
+        '--pypy',
+        action='store_true',
+        default=False,
+        help='warm up the Pypy JIT (default: %(default)s)',
+    )
+    return parser.parse_args()
+
+
+def warm_up():
+    log.info('Warming up the Pypy JIT...')
+    timeit.repeat(
+        stmt=protobuf,
+        setup=protobuf_setup,
+        repeat=3,
+        number=10**6,
+    )
+
+
 if __name__ == '__main__':
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s.%(msecs)03d %(name)s: %(levelname)s: %(message)s',
         datefmt='%Y-%m-%dT%H:%M:%S',
     )
+    args = parse_args()
+    if args.pypy:
+        warm_up()
     log.info('Starting benchmark...')
     benchmark()
