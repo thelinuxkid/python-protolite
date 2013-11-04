@@ -29,11 +29,11 @@ class convenience_coder(object):
 
 
     def decode(self, message):
-        return protolite.decode(self.decoding, message)
+        return encoder.decode(self.decoding, message)
 
 
     def encode(self, message):
-        return protolite.encode(self.encoding, message)
+        return encoder.encode(self.encoding, message)
 
 
     def _pprint(self, message, encoding):
@@ -291,7 +291,7 @@ def generate(protos, output, prefixes):
                 'import sys\n',
                 'import json\n\n',
                 'from collections import OrderedDict\n\n',
-                'import protolite\n',
+                'from protolite import encoder\n',
             ]
             fp.writelines(_imports)
             for _import in imports:

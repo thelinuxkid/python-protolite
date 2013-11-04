@@ -1,6 +1,6 @@
 from nose.tools import eq_ as equal
 
-from protolite import protolite
+from protolite import encoder
 
 
 class decoding(object):
@@ -136,7 +136,7 @@ def test_decode_delimited_varint():
         ])),
     ])
     data = '\x8a\x13\xcf\t'
-    msg = protolite.decode(dec_proto, data)
+    msg = encoder.decode(dec_proto, data)
     want = dict([
         ('dec_message', dict()),
     ])
@@ -144,7 +144,7 @@ def test_decode_delimited_varint():
 
 
 def test_encode_delimited_varint():
-    # Don't check against data string since protolite doesn't use OrderedDict
+    # Don't check against data string since encoder doesn't use OrderedDict
     def _index():
         for i in range(0, 22):
             for j in range(32, 127):
@@ -181,14 +181,14 @@ def test_encode_delimited_varint():
     msg = dict([
         ('message_foo', msg),
     ])
-    data = protolite.encode(enc_proto, msg)
-    res = protolite.decode(dec_proto, data)
+    data = encoder.encode(enc_proto, msg)
+    res = encoder.decode(dec_proto, data)
     equal(msg, res)
 
 
 def test_decode_embedded():
     data = '\x08\x08B\x12\n\r\x08\x04"\t\n\x07foobody\x18\xb9`'
-    msg = protolite.decode(decoding.message_sna, data)
+    msg = encoder.decode(decoding.message_sna, data)
     want =  dict([
         ('message_baz', dict([
             ('baz_id', 12345),
@@ -205,7 +205,7 @@ def test_decode_embedded():
 
 
 def test_encode_embedded():
-    # Don't check against data string since protolite doesn't use OrderedDict
+    # Don't check against data string since encoder doesn't use OrderedDict
     msg =  dict([
         ('message_baz', dict([
             ('baz_id', 12345),
@@ -218,14 +218,14 @@ def test_encode_embedded():
         ])),
         ('type', 8),
     ])
-    data = protolite.encode(encoding.message_sna, msg)
-    res = protolite.decode(decoding.message_sna, data)
+    data = encoder.encode(encoding.message_sna, msg)
+    res = encoder.decode(decoding.message_sna, data)
     equal(msg, res)
 
 
 def test_decode_repeated():
     data = '\x08\n*\x02\x08\n*\x02\x08\x14'
-    msg = protolite.decode(decoding.bar, data)
+    msg = encoder.decode(decoding.bar, data)
     want = dict([
       ('bar_id', 10),
       ('foos', [
@@ -237,7 +237,7 @@ def test_decode_repeated():
 
 
 def test_encode_repeated():
-    # Don't check against data string since protolite doesn't use OrderedDict
+    # Don't check against data string since encoder doesn't use OrderedDict
     msg = dict([
       ('bar_id', 10),
       ('foos', [
@@ -245,8 +245,8 @@ def test_encode_repeated():
         dict([('foo_id', 20)]),
       ]),
     ])
-    data = protolite.encode(encoding.bar, msg)
-    res = protolite.decode(decoding.bar, data)
+    data = encoder.encode(encoding.bar, msg)
+    res = encoder.decode(decoding.bar, data)
     equal(msg, res)
 
 def test_decode_bool_simple():
@@ -257,13 +257,13 @@ def test_decode_bool_simple():
         ])),
     ])
     data = '8\x00'
-    msg = protolite.decode(proto, data)
+    msg = encoder.decode(proto, data)
     want = dict([('is_foo', False)])
     equal(want, msg)
 
 
 def test_encode_bool_simple():
-    # Don't check against data string since protolite doesn't use OrderedDict
+    # Don't check against data string since encoder doesn't use OrderedDict
     enc_proto = dict([
         ('is_foo', dict([
             ('type', 'bool'),
@@ -277,8 +277,8 @@ def test_encode_bool_simple():
         ])),
     ])
     msg = dict([('is_foo', False)])
-    data = protolite.encode(enc_proto, msg)
-    res = protolite.decode(dec_proto, data)
+    data = encoder.encode(enc_proto, msg)
+    res = encoder.decode(dec_proto, data)
     equal(msg, res)
 
 
@@ -290,13 +290,13 @@ def test_decode_enum_simple():
         ])),
     ])
     data = '8\x07'
-    msg = protolite.decode(proto, data)
+    msg = encoder.decode(proto, data)
     want = dict([('type', 7)])
     equal(want, msg)
 
 
 def test_encode_enum_simple():
-    # Don't check against data string since protolite doesn't use OrderedDict
+    # Don't check against data string since encoder doesn't use OrderedDict
     enc_proto = dict([
         ('type', dict([
             ('type', 'enum'),
@@ -310,8 +310,8 @@ def test_encode_enum_simple():
         ])),
     ])
     msg = dict([('type', 7)])
-    data = protolite.encode(enc_proto, msg)
-    res = protolite.decode(dec_proto, data)
+    data = encoder.encode(enc_proto, msg)
+    res = encoder.decode(dec_proto, data)
     equal(msg, res)
 
 def test_decode_varint_key():
@@ -333,7 +333,7 @@ def test_decode_varint_key():
         ])),
     ])
     data = '\x08\xb1\x02\x8a\x13\xcf\t'
-    msg = protolite.decode(dec_proto, data)
+    msg = encoder.decode(dec_proto, data)
     want = dict([
         ('type', 305),
         ('dec_message', dict()),
@@ -342,7 +342,7 @@ def test_decode_varint_key():
 
 
 def test_encode_varint_key():
-    # Don't check against data string since protolite doesn't use OrderedDict
+    # Don't check against data string since encoder doesn't use OrderedDict
     enc_message = dict([
         ('first_name', dict([
             ('type', 'string'),
@@ -381,8 +381,8 @@ def test_encode_varint_key():
         ('type', 305),
         ('message_foo', dict()),
     ])
-    data = protolite.encode(enc_proto, msg)
-    res = protolite.decode(dec_proto, data)
+    data = encoder.encode(enc_proto, msg)
+    res = encoder.decode(dec_proto, data)
     equal(msg, res)
 
 
@@ -397,7 +397,7 @@ def test_decode_varint_uint64():
         ('foo_id', 1007843487950966784L),
     ])
     data = '\x10\x80\xa0\x88\x84\x80\x8a\xa5\xfe\r'
-    msg = protolite.decode(dec_proto, data)
+    msg = encoder.decode(dec_proto, data)
     want = dict([
         ('foo_id', 1007843487950966784L),
     ])
@@ -405,7 +405,7 @@ def test_decode_varint_uint64():
 
 
 def test_encode_varint_uint64():
-    # Don't check against data string since protolite doesn't use OrderedDict
+    # Don't check against data string since encoder doesn't use OrderedDict
     enc_proto = dict([
         ('foo_id', dict([
             ('type', 'uint64'),
@@ -421,8 +421,8 @@ def test_encode_varint_uint64():
     msg = dict([
         ('foo_id', 1007843487950966784L),
     ])
-    data = protolite.encode(enc_proto, msg)
-    res = protolite.decode(dec_proto, data)
+    data = encoder.encode(enc_proto, msg)
+    res = encoder.decode(dec_proto, data)
     equal(msg, res)
 
 def test_decode_float():
@@ -436,7 +436,7 @@ def test_decode_float():
         ('foo', -122.39293670654297),
     ])
     data = '\r/\xc9\xf4\xc2'
-    msg = protolite.decode(dec_proto, data)
+    msg = encoder.decode(dec_proto, data)
     want = dict([
         ('foo', -122.39293670654297),
     ])
@@ -444,7 +444,7 @@ def test_decode_float():
 
 
 def test_encode_float():
-    # Don't check against data string since protolite doesn't use OrderedDict
+    # Don't check against data string since encoder doesn't use OrderedDict
     enc_proto = dict([
         ('foo', dict([
             ('type', 'float'),
@@ -460,6 +460,6 @@ def test_encode_float():
     msg = dict([
         ('foo', -122.39293670654297),
     ])
-    data = protolite.encode(enc_proto, msg)
-    res = protolite.decode(dec_proto, data)
+    data = encoder.encode(enc_proto, msg)
+    res = encoder.decode(dec_proto, data)
     equal(msg, res)
