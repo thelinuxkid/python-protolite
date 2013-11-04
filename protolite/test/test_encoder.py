@@ -70,6 +70,10 @@ class decoding(object):
             ('type', 'float'),
             ('name', 'bar_value'),
         ])),
+        (3, dict([
+            ('type', 'double'),
+            ('name', 'bar_result'),
+        ])),
         (5, dict([
             ('type', 'repeated'),
             ('name', 'foos'),
@@ -133,6 +137,10 @@ class encoding(object):
         ('bar_value', dict([
             ('type', 'float'),
             ('field', 2),
+        ])),
+        ('bar_result', dict([
+            ('type', 'double'),
+            ('field', 3),
         ])),
         ('foos', dict([
             ('type', 'repeated'),
@@ -232,6 +240,25 @@ def test_encode_enum():
     msg = dict([('type', 7)])
     data = encoder.encode(encoding.message_bar, msg)
     res = encoder.decode(decoding.message_bar, data)
+    equal(msg, res)
+
+
+def test_decode_64bit():
+    data = '\x19\x00\x00\x00\xe0%\x99^\xc0'
+    msg = encoder.decode(decoding.bar, data)
+    want = dict([
+        ('bar_result', -122.39293670654297),
+    ])
+    equal(want, msg)
+
+
+def test_encode_64bit():
+    # Don't check against data string since encoder doesn't use OrderedDict
+    msg = dict([
+        ('bar_result', -122.39293670654297),
+    ])
+    data = encoder.encode(encoding.bar, msg)
+    res = encoder.decode(decoding.bar, data)
     equal(msg, res)
 
 
@@ -385,7 +412,7 @@ def test_encode_repeated():
     equal(msg, res)
 
 
-def test_decode_float():
+def test_decode_32bit():
     data = '\x15/\xc9\xf4\xc2'
     msg = encoder.decode(decoding.bar, data)
     want = dict([
@@ -394,7 +421,7 @@ def test_decode_float():
     equal(want, msg)
 
 
-def test_encode_float():
+def test_encode_32bit():
     # Don't check against data string since encoder doesn't use OrderedDict
     msg = dict([
         ('bar_value', -122.39293670654297),
