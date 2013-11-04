@@ -48,11 +48,23 @@ class decoding(object):
             ('type', 'uint64'),
             ('name', 'foo_id'),
         ])),
+        (2, dict([
+            ('type', 'bool'),
+            ('name', 'is_foo'),
+        ])),
+        (305, dict([
+            ('type', 'int32'),
+            ('name', 'foo_value'),
+        ])),
     ])
     bar = dict([
         (1, dict([
             ('type', 'uint64'),
             ('name', 'bar_id'),
+        ])),
+        (2, dict([
+            ('type', 'float'),
+            ('name', 'bar_value'),
         ])),
         (5, dict([
             ('type', 'repeated'),
@@ -96,11 +108,23 @@ class encoding(object):
             ('type', 'uint64'),
             ('field', 1),
         ])),
+        ('is_foo', dict([
+            ('type', 'bool'),
+            ('field', 2),
+        ])),
+        ('foo_value', dict([
+            ('type', 'int32'),
+            ('field', 305),
+        ])),
     ])
     bar = dict([
         ('bar_id', dict([
             ('type', 'uint64'),
             ('field', 1),
+        ])),
+        ('bar_value', dict([
+            ('type', 'float'),
+            ('field', 2),
         ])),
         ('foos', dict([
             ('type', 'repeated'),
@@ -121,7 +145,74 @@ class encoding(object):
     ])
 
 
-def test_decode_delimited_varint():
+def test_decode_key_as_varint():
+    data = '\x88\x13\x08'
+    msg = encoder.decode(decoding.foo, data)
+    want = dict([
+        ('foo_value', 8),
+    ])
+    equal(want, msg)
+
+def test_encode_key_as_varint():
+    # Don't check against data string since protolite doesn't use OrderedDict
+    msg = dict([
+        ('foo_value', 8),
+    ])
+    data = encoder.encode(encoding.foo, msg)
+    res = encoder.decode(decoding.foo, data)
+    equal(msg, res)
+
+
+def test_decode_bool():
+    data = '\x10\x00'
+    msg = encoder.decode(decoding.foo, data)
+    want = dict([('is_foo', False)])
+    equal(want, msg)
+
+
+def test_encode_bool():
+    # Don't check against data string since encoder doesn't use OrderedDict
+    msg = dict([('is_foo', False)])
+    data = encoder.encode(encoding.foo, msg)
+    res = encoder.decode(decoding.foo, data)
+    equal(msg, res)
+
+
+def test_decode_enum():
+    data = '\x08\x07'
+    msg = encoder.decode(decoding.message_bar, data)
+    want = dict([('type', 7)])
+    equal(want, msg)
+
+
+def test_encode_enum():
+    # Don't check against data string since encoder doesn't use OrderedDict
+    msg = dict([('type', 7)])
+    data = encoder.encode(encoding.message_bar, msg)
+    res = encoder.decode(decoding.message_bar, data)
+    equal(msg, res)
+
+
+def test_decode_varint_uint64():
+    data = '\x08\x80\xa0\x88\x84\x80\x8a\xa5\xfe\r'
+    msg = encoder.decode(decoding.bar, data)
+    want = dict([
+        ('bar_id', 1007843487950966784L),
+    ])
+    equal(want, msg)
+
+
+def test_encode_varint_uint64():
+    # Don't check against data string since encoder doesn't use OrderedDict
+    msg = dict([
+        ('bar_id', 1007843487950966784L),
+    ])
+    data = encoder.encode(encoding.bar, msg)
+    res = encoder.decode(decoding.bar, data)
+    equal(msg, res)
+
+
+def test_decode_delimited_length_as_varint():
     dec_message = dict([
         (1, dict([
             ('type', 'string'),
@@ -137,14 +228,16 @@ def test_decode_delimited_varint():
     ])
     data = '\x8a\x13\xcf\t'
     msg = encoder.decode(dec_proto, data)
+    # we don't care about the items, only the value of the length
     want = dict([
         ('dec_message', dict()),
     ])
     equal(want, msg)
 
 
-def test_encode_delimited_varint():
+def test_encode_delimited_length_as_varint():
     # Don't check against data string since encoder doesn't use OrderedDict
+    # We need lots of items to create a large length value
     def _index():
         for i in range(0, 22):
             for j in range(32, 127):
@@ -249,217 +342,21 @@ def test_encode_repeated():
     res = encoder.decode(decoding.bar, data)
     equal(msg, res)
 
-def test_decode_bool_simple():
-    proto = dict([
-        (7, dict([
-            ('type', 'bool'),
-            ('name', 'is_foo'),
-        ])),
-    ])
-    data = '8\x00'
-    msg = encoder.decode(proto, data)
-    want = dict([('is_foo', False)])
-    equal(want, msg)
-
-
-def test_encode_bool_simple():
-    # Don't check against data string since encoder doesn't use OrderedDict
-    enc_proto = dict([
-        ('is_foo', dict([
-            ('type', 'bool'),
-            ('field', 7),
-        ])),
-    ])
-    dec_proto = dict([
-        (7, dict([
-            ('type', 'bool'),
-            ('name', 'is_foo'),
-        ])),
-    ])
-    msg = dict([('is_foo', False)])
-    data = encoder.encode(enc_proto, msg)
-    res = encoder.decode(dec_proto, data)
-    equal(msg, res)
-
-
-def test_decode_enum_simple():
-    proto = dict([
-        (7, dict([
-            ('type', 'enum'),
-            ('name', 'type'),
-        ])),
-    ])
-    data = '8\x07'
-    msg = encoder.decode(proto, data)
-    want = dict([('type', 7)])
-    equal(want, msg)
-
-
-def test_encode_enum_simple():
-    # Don't check against data string since encoder doesn't use OrderedDict
-    enc_proto = dict([
-        ('type', dict([
-            ('type', 'enum'),
-            ('field', 7),
-        ])),
-    ])
-    dec_proto = dict([
-        (7, dict([
-            ('type', 'enum'),
-            ('name', 'type'),
-        ])),
-    ])
-    msg = dict([('type', 7)])
-    data = encoder.encode(enc_proto, msg)
-    res = encoder.decode(dec_proto, data)
-    equal(msg, res)
-
-def test_decode_varint_key():
-    dec_message = dict([
-        (1, dict([
-            ('type', 'string'),
-            ('name', 'first_name'),
-        ])),
-    ])
-    dec_proto = dict([
-        (1, dict([
-            ('type', 'enum'),
-            ('name', 'type'),
-        ])),
-        (305, dict([
-            ('type', 'embedded'),
-            ('name', 'dec_message'),
-            ('message', dec_message),
-        ])),
-    ])
-    data = '\x08\xb1\x02\x8a\x13\xcf\t'
-    msg = encoder.decode(dec_proto, data)
-    want = dict([
-        ('type', 305),
-        ('dec_message', dict()),
-    ])
-    equal(want, msg)
-
-
-def test_encode_varint_key():
-    # Don't check against data string since encoder doesn't use OrderedDict
-    enc_message = dict([
-        ('first_name', dict([
-            ('type', 'string'),
-            ('field', 1),
-        ])),
-    ])
-    enc_proto = dict([
-        ('type', dict([
-            ('type', 'enum'),
-            ('field', 1),
-        ])),
-        ('message_foo', dict([
-            ('type', 'embedded'),
-            ('field', 305),
-            ('message', enc_message),
-        ])),
-    ])
-    dec_message = dict([
-        (1, dict([
-            ('type', 'string'),
-            ('name', 'first_name'),
-        ])),
-    ])
-    dec_proto = dict([
-        (1, dict([
-            ('type', 'enum'),
-            ('name', 'type'),
-        ])),
-        (305, dict([
-            ('type', 'embedded'),
-            ('name', 'message_foo'),
-            ('message', dec_message),
-        ])),
-    ])
-    msg = dict([
-        ('type', 305),
-        ('message_foo', dict()),
-    ])
-    data = encoder.encode(enc_proto, msg)
-    res = encoder.decode(dec_proto, data)
-    equal(msg, res)
-
-
-def test_decode_varint_uint64():
-    dec_proto = dict([
-        (2, dict([
-            ('type', 'uint64'),
-            ('name', 'foo_id'),
-        ])),
-    ])
-    msg = dict([
-        ('foo_id', 1007843487950966784L),
-    ])
-    data = '\x10\x80\xa0\x88\x84\x80\x8a\xa5\xfe\r'
-    msg = encoder.decode(dec_proto, data)
-    want = dict([
-        ('foo_id', 1007843487950966784L),
-    ])
-    equal(want, msg)
-
-
-def test_encode_varint_uint64():
-    # Don't check against data string since encoder doesn't use OrderedDict
-    enc_proto = dict([
-        ('foo_id', dict([
-            ('type', 'uint64'),
-            ('field', 2),
-        ])),
-    ])
-    dec_proto = dict([
-        (2, dict([
-            ('type', 'uint64'),
-            ('name', 'foo_id'),
-        ])),
-    ])
-    msg = dict([
-        ('foo_id', 1007843487950966784L),
-    ])
-    data = encoder.encode(enc_proto, msg)
-    res = encoder.decode(dec_proto, data)
-    equal(msg, res)
 
 def test_decode_float():
-    dec_proto = dict([
-        (1, dict([
-            ('type', 'float'),
-            ('name', 'foo'),
-        ])),
-    ])
-    msg = dict([
-        ('foo', -122.39293670654297),
-    ])
-    data = '\r/\xc9\xf4\xc2'
-    msg = encoder.decode(dec_proto, data)
+    data = '\x15/\xc9\xf4\xc2'
+    msg = encoder.decode(decoding.bar, data)
     want = dict([
-        ('foo', -122.39293670654297),
+        ('bar_value', -122.39293670654297),
     ])
     equal(want, msg)
 
 
 def test_encode_float():
     # Don't check against data string since encoder doesn't use OrderedDict
-    enc_proto = dict([
-        ('foo', dict([
-            ('type', 'float'),
-            ('field', 1),
-        ])),
-    ])
-    dec_proto = dict([
-        (1, dict([
-            ('type', 'float'),
-            ('name', 'foo'),
-        ])),
-    ])
     msg = dict([
-        ('foo', -122.39293670654297),
+        ('bar_value', -122.39293670654297),
     ])
-    data = encoder.encode(enc_proto, msg)
-    res = encoder.decode(dec_proto, data)
+    data = encoder.encode(encoding.bar, msg)
+    res = encoder.decode(decoding.bar, data)
     equal(msg, res)
