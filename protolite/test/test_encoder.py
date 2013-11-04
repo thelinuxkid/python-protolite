@@ -339,6 +339,25 @@ def test_encode_embedded():
     equal(msg, res)
 
 
+def test_decode_string():
+    data = '\n\hello world'
+    msg = encoder.decode(decoding.message_foo, data)
+    want = dict([
+      ('body', 'hello world'),
+    ])
+    equal(want, msg)
+
+
+def test_encode_string():
+    # Don't check against data string since protolite doesn't use OrderedDict
+    msg = dict([
+      ('body', 'hello world'),
+    ])
+    data = encoder.encode(encoding.message_foo, msg)
+    res = encoder.decode(decoding.message_foo, data)
+    equal(msg, res)
+
+
 def test_decode_repeated():
     data = '\x08\n*\x02\x08\n*\x02\x08\x14'
     msg = encoder.decode(decoding.bar, data)
