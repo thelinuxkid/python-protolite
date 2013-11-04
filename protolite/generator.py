@@ -20,8 +20,8 @@ ignore_types = [
     proto_parser.PACKAGE_LITERAL,
 ]
 
-convenience_coder = """
-class convenience_coder(object):
+wrapper = """
+class wrapper(object):
 
     def __init__(self, decoding, encoding):
         self.decoding = decoding
@@ -307,12 +307,12 @@ def generate(protos, output, prefixes):
                     )
                 fp.write('\n\n')
             fp.write(
-                '\n{convenience}\n\n'.format(convenience=convenience_coder),
+                '\n{wrapper}\n\n'.format(wrapper=wrapper),
             )
             for field in fields:
                 field = underscore(field, prefixes=prefixes)
                 fp.write(
-                    '{field} = convenience_coder(decoding.{field}, '
+                    '{field} = wrapper(decoding.{field}, '
                     'encoding.{field})\n'.format(
                         field=field,
                     )
