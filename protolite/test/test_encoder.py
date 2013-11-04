@@ -52,6 +52,10 @@ class decoding(object):
             ('type', 'bool'),
             ('name', 'is_foo'),
         ])),
+        (3, dict([
+            ('type', 'uint32'),
+            ('name', 'foo_count'),
+        ])),
         (305, dict([
             ('type', 'int32'),
             ('name', 'foo_value'),
@@ -112,6 +116,10 @@ class encoding(object):
             ('type', 'bool'),
             ('field', 2),
         ])),
+        ('foo_count', dict([
+            ('type', 'uint32'),
+            ('field', 3),
+        ])),
         ('foo_value', dict([
             ('type', 'int32'),
             ('field', 305),
@@ -163,6 +171,40 @@ def test_encode_key_as_varint():
     equal(msg, res)
 
 
+def test_decode_int32():
+    data= '\x18\x7f'
+    msg = encoder.decode(decoding.foo, data)
+    want = dict([('foo_count', 127)])
+    equal(want, msg)
+
+
+def test_encode_int32():
+    # Don't check against data string since protolite doesn't use OrderedDict
+    msg = dict([('foo_count', 127)])
+    data = encoder.encode(encoding.foo, msg)
+    res = encoder.decode(decoding.foo, data)
+    equal(msg, res)
+
+
+def test_decode_uint64():
+    data = '\x08\x80\xa0\x88\x84\x80\x8a\xa5\xfe\r'
+    msg = encoder.decode(decoding.bar, data)
+    want = dict([
+        ('bar_id', 1007843487950966784L),
+    ])
+    equal(want, msg)
+
+
+def test_encode_uint64():
+    # Don't check against data string since encoder doesn't use OrderedDict
+    msg = dict([
+        ('bar_id', 1007843487950966784L),
+    ])
+    data = encoder.encode(encoding.bar, msg)
+    res = encoder.decode(decoding.bar, data)
+    equal(msg, res)
+
+
 def test_decode_bool():
     data = '\x10\x00'
     msg = encoder.decode(decoding.foo, data)
@@ -190,25 +232,6 @@ def test_encode_enum():
     msg = dict([('type', 7)])
     data = encoder.encode(encoding.message_bar, msg)
     res = encoder.decode(decoding.message_bar, data)
-    equal(msg, res)
-
-
-def test_decode_varint_uint64():
-    data = '\x08\x80\xa0\x88\x84\x80\x8a\xa5\xfe\r'
-    msg = encoder.decode(decoding.bar, data)
-    want = dict([
-        ('bar_id', 1007843487950966784L),
-    ])
-    equal(want, msg)
-
-
-def test_encode_varint_uint64():
-    # Don't check against data string since encoder doesn't use OrderedDict
-    msg = dict([
-        ('bar_id', 1007843487950966784L),
-    ])
-    data = encoder.encode(encoding.bar, msg)
-    res = encoder.decode(decoding.bar, data)
     equal(msg, res)
 
 
