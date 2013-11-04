@@ -8,8 +8,8 @@ from collections import defaultdict, OrderedDict
 from antlr3 import ANTLRFileStream, CommonTokenStream
 
 from util import abs_path
-from parse import proto_parser
-from parse import proto_lexer
+from protolite.parser import proto_parser
+from protolite.parser import proto_lexer
 
 log = logging.getLogger(__name__)
 

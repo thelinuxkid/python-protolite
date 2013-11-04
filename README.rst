@@ -137,7 +137,7 @@ parser
 
 If you download the source code from github_ you will see a
 ``grammar`` directory at the root level. This directory contains all
-the files used to create the parser and lexer in ``protolite.parse``,
+the files used to create the parser and lexer in ``protolite.parser``,
 the module used by ``python-protolitec`` to parse the protobuf
 definition files. If you are familiar with Antlr_ you can edit the
 ``proto_lexer.g`` and ``proto_parser.g`` files in this directory to create a
@@ -150,7 +150,7 @@ new Python parser and/or lexer using the Antlr jar in the same directory::
 This will create four files:  ``proto_lexer.py``,
 ``proto_lexer.tokens``, ``proto_parser.py`` and
 ``proto_parser.tokens``. You can leave the \*.tokens files where they
-are but move the \*.py files to protolite/parse to use your new parser
+are but move the \*.py files to protolite/parser to use your new parser
 with ``python-protolitec``. If you want to use a different version of
 Antlr do so at your own risk. You will likely need the new Antlr
 version to match the Python runtime version in setup.py.
