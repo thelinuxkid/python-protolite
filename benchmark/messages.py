@@ -3,7 +3,7 @@ import json
 
 from collections import OrderedDict
 
-import protolite
+from protolite import encoder
 
 
 class decoding(object):
@@ -129,7 +129,7 @@ class encoding(object):
 
 
 
-class convenience_coder(object):
+class wrapper(object):
 
     def __init__(self, decoding, encoding):
         self.decoding = decoding
@@ -137,11 +137,11 @@ class convenience_coder(object):
 
 
     def decode(self, message):
-        return protolite.decode(self.decoding, message)
+        return encoder.decode(self.decoding, message)
 
 
     def encode(self, message):
-        return protolite.encode(self.encoding, message)
+        return encoder.encode(self.encoding, message)
 
 
     def _pprint(self, message, encoding):
@@ -168,9 +168,9 @@ class convenience_coder(object):
         stream.write(json.dumps(fields, indent=8, separators=(',', ': ')))
 
 
-phone_number = convenience_coder(decoding.phone_number, encoding.phone_number)
-us_address = convenience_coder(decoding.us_address, encoding.us_address)
-user = convenience_coder(decoding.user, encoding.user)
+phone_number = wrapper(decoding.phone_number, encoding.phone_number)
+us_address = wrapper(decoding.us_address, encoding.us_address)
+user = wrapper(decoding.user, encoding.user)
 
 
 user.STANDARD = 0
