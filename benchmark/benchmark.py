@@ -139,13 +139,13 @@ def parse_args():
         '--pypy',
         action='store_true',
         default=False,
-        help='warm up the Pypy JIT (default: %(default)s)',
+        help='warm up the Pypy JIT compiler (default: %(default)s)',
     )
     return parser.parse_args()
 
 
 def warm_up():
-    log.info('Warming up the Pypy JIT...')
+    log.info('Warming up the Pypy JIT compiler...')
     timeit.repeat(
         stmt=protobuf,
         setup=protobuf_setup,
