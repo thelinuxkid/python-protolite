@@ -35,8 +35,8 @@ Pypy JIT compiler and get a more accurate result::
 You can also make changes to the ``benchmark/messages.proto`` file to create
 your own tests. You'll need to re-compile the ``messages.py`` and
 ``messages_pb2.py`` files in the ``benchmark`` directory afterwards by running
-the ``make`` command inside the same directory. Of course you will need protoc_
-to compiler Google's version.
+the ``make`` command inside the same directory. Of course, you will need protoc_
+to compile Google's version.
 
 
 description

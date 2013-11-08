@@ -1,0 +1,12 @@
+- packed=true: https://developers.google.com/protocol-buffers/docs/proto#simple
+- default values: https://developers.google.com/protocol-buffers/docs/proto#optional
+- enum aliases: https://developers.google.com/protocol-buffers/docs/proto#enum
+- global enums: https://developers.google.com/protocol-buffers/docs/proto#enum
+- public option in imports: https://developers.google.com/protocol-buffers/docs/proto#other
+- nested types: https://developers.google.com/protocol-buffers/docs/proto#nested
+- extensions: https://developers.google.com/protocol-buffers/docs/proto#extensions
+- package specifiers: https://developers.google.com/protocol-buffers/docs/proto#packages
+- services: https://developers.google.com/protocol-buffers/docs/proto#services
+- all ptions: https://developers.google.com/protocol-buffers/docs/proto#options
+- required field rule: https://developers.google.com/protocol-buffers/docs/proto#simple
+- filenames that clash with Python keywords
