@@ -412,6 +412,27 @@ def test_encode_repeated():
     equal(msg, res)
 
 
+def test_decode_repeated_varint():
+    # TODO lists should only be returned if elements are 'repeated'
+    data = '\x08\n\x08\x14'
+    msg = encoder.decode(decoding.bar, data)
+    want = dict([
+      ('bar_id', [10, 20])
+    ])
+    equal(want, msg)
+
+
+def test_encode_repeated_varint():
+    # TODO lists should only be returned if elements are 'repeated'
+    # Don't check against data string since encoder doesn't use OrderedDict
+    msg = dict([
+      ('bar_id', [10, 20]),
+    ])
+    data = encoder.encode(encoding.bar, msg)
+    res = encoder.decode(decoding.bar, data)
+    equal(msg, res)
+
+
 def test_decode_32bit():
     data = '\x15/\xc9\xf4\xc2'
     msg = encoder.decode(decoding.bar, data)
