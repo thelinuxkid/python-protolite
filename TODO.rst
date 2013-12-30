@@ -7,6 +7,7 @@
 - extensions: https://developers.google.com/protocol-buffers/docs/proto#extensions
 - package specifiers: https://developers.google.com/protocol-buffers/docs/proto#packages
 - services: https://developers.google.com/protocol-buffers/docs/proto#services
-- all ptions: https://developers.google.com/protocol-buffers/docs/proto#options
+- all options: https://developers.google.com/protocol-buffers/docs/proto#options
 - required field rule: https://developers.google.com/protocol-buffers/docs/proto#simple
+- non-consecutive repeated values https://developers.google.com/protocol-buffers/docs/encoding#optional
 - filenames that clash with Python keywords
