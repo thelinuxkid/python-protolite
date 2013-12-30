@@ -67,12 +67,7 @@ def _decode(proto, data):
             # end optimization
             if _type == 'bool':
                 num = bool(num)
-            if name not in msg:
-                msg[name] = num
-                continue
-            if not isinstance(msg[name], list):
-                msg[name] = [msg[name]]
-            msg[name].append(num)
+            msg[name] = num
             continue
         if wire == 1:
             fmt = struct_formats[_type]
@@ -140,37 +135,34 @@ def _encode(proto, msg):
         field = info['field']
         _type = info['type']
         if _type in varint_types:
-            if type(v) != list:
-                v = [v]
-            for i in v:
-                # TODO support int32, int64, uint32, sint32, sint64
-                # optimization: avoid function calls to encode_key
-                key = (field << 3) | 0
-                # end optimization
-                # optimization: avoid function calls to encode_varint
-                _next = 1
-                _value = key
-                key = []
-                while _next:
-                    _next = _value >> 7
-                    shift = 128 if _next else 0
-                    part = (_value & 127) | shift
-                    key.append(part)
-                    _value = _next
-                # end optimization
-                if _type == 'bool':
-                    i = int(i)
-                # optimization: avoid function calls to encode_varint
-                _next = 1
-                _value = i
-                values = []
-                while _next:
-                    _next = _value >> 7
-                    shift = 128 if _next else 0
-                    part = (_value & 127) | shift
-                    values.append(part)
-                    _value = _next
-                data += key + values
+            # TODO support int32, int64, uint32, sint32, sint64
+            # optimization: avoid function calls to encode_key
+            key = (field << 3) | 0
+            # end optimization
+            # optimization: avoid function calls to encode_varint
+            _next = 1
+            _value = key
+            key = []
+            while _next:
+                _next = _value >> 7
+                shift = 128 if _next else 0
+                part = (_value & 127) | shift
+                key.append(part)
+                _value = _next
+            # end optimization
+            if _type == 'bool':
+                v = int(v)
+            # optimization: avoid function calls to encode_varint
+            _next = 1
+            _value = v
+            values = []
+            while _next:
+                _next = _value >> 7
+                shift = 128 if _next else 0
+                part = (_value & 127) | shift
+                values.append(part)
+                _value = _next
+            data += key + values
             continue
         if _type in _64bit_types:
             # optimization: avoid function calls to encode_key
