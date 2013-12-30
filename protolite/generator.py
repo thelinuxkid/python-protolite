@@ -138,12 +138,13 @@ def _parse(tree):
         field_number = int(field_number.getText())
         fields['name'] = field_name.getText()
         fields['type'] = field_type.getText()
+        # TODO handle other scopes
+        if scope.getText() == 'repeated':
+            fields['scope'] = scope.getText()
         if field_type.getType() == proto_parser.IDENTIFIER:
             _tree = tree.getParent()
             fields['message'] = fields['type']
             fields['type'] = 'embedded'
-            if scope.getText() == 'repeated':
-                fields['type'] = 'repeated'
             while _tree:
                 for child in _tree.children:
                     if (child.getType() == proto_parser.ENUM_LITERAL and
@@ -182,7 +183,7 @@ def parse(tree, prefixes=[]):
             if info['type'] == 'enum':
                 reference = info.pop('message')
                 enums[name]['fields'][info['name']] = reference
-            if info['type'] in ['embedded', 'repeated']:
+            if info['type'] == 'embedded':
                 reference = info.pop('message')
                 dec_refs[name][field] = reference
                 enc_refs[name][info['name']] = reference
@@ -194,9 +195,9 @@ def parse(tree, prefixes=[]):
         _fields = DefaultOrderedDict(OrderedDict)
         for field, info in fields.items():
             _info = OrderedDict([
-                ('type', info['type']),
-                ('field', field),
+                (k, v) for k, v in info.items() if k != 'name'
             ])
+            _info['field'] = field
             _fields[info['name']] = _info
         encoding[name] = _fields
 
