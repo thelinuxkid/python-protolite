@@ -62,7 +62,8 @@ class decoding(object):
         },
         6: {
                 "name": "phone_numbers",
-                "type": "repeated"
+                "type": "embedded",
+                "scope": "repeated"
         }
 }
 
@@ -122,7 +123,8 @@ class encoding(object):
                 "field": 5
         },
         "phone_numbers": {
-                "type": "repeated",
+                "type": "embedded",
+                "scope": "repeated",
                 "field": 6
         }
 }
