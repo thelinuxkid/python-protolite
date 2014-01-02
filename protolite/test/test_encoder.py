@@ -86,6 +86,13 @@ class decoding(object):
             ('scope', 'repeated'),
         ])),
     ])
+    sna = dict([
+        (1, dict([
+            ('type', 'uint64'),
+            ('name', 'sna_ids'),
+            ('scope', 'repeated'),
+        ])),
+    ])
 
 
 class encoding(object):
@@ -171,6 +178,13 @@ class encoding(object):
             ('message', message_baz),
         ])),
     ])
+    sna = dict([
+        ('sna_ids', dict([
+            ('type', 'uint64'),
+            ('field', 1),
+            ('scope', 'repeated'),
+        ])),
+    ])
 
 
 def test_decode_key_as_varint():
@@ -253,6 +267,25 @@ def test_encode_enum():
     msg = dict([('type', 7)])
     data = encoder.encode(encoding.message_bar, msg)
     res = encoder.decode(decoding.message_bar, data)
+    equal(msg, res)
+
+
+def test_decode_repeated_varint():
+    data = '\x08\n\x08\x14'
+    msg = encoder.decode(decoding.sna, data)
+    want = dict([
+      ('sna_ids', [10, 20]),
+    ])
+    equal(want, msg)
+
+
+def test_encode_repeated_varint():
+    # Don't check against data string since encoder doesn't use OrderedDict
+    msg = dict([
+      ('sna_ids', [10, 20]),
+    ])
+    data = encoder.encode(encoding.sna, msg)
+    res = encoder.decode(decoding.sna, data)
     equal(msg, res)
 
 
