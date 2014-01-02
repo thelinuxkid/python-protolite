@@ -168,6 +168,7 @@ class wrapper(object):
             encoding = self.encoding
         fields = self._pprint(message, encoding)
         stream.write(json.dumps(fields, indent=8, separators=(',', ': ')))
+        stream.write('\n')
 
 
 phone_number = wrapper(decoding.phone_number, encoding.phone_number)
