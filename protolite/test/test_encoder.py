@@ -75,9 +75,10 @@ class decoding(object):
             ('name', 'bar_result'),
         ])),
         (5, dict([
-            ('type', 'repeated'),
+            ('type', 'embedded'),
             ('name', 'foos'),
-            ('message', foo)
+            ('message', foo),
+            ('scope', 'repeated'),
         ])),
     ])
 
@@ -143,9 +144,10 @@ class encoding(object):
             ('field', 3),
         ])),
         ('foos', dict([
-            ('type', 'repeated'),
+            ('type', 'embedded'),
             ('field', 5),
-            ('message', foo)
+            ('message', foo),
+            ('scope', 'repeated'),
         ])),
     ])
     message_sna = dict([
@@ -168,6 +170,7 @@ def test_decode_key_as_varint():
         ('foo_value', 8),
     ])
     equal(want, msg)
+
 
 def test_encode_key_as_varint():
     # Don't check against data string since protolite doesn't use OrderedDict
@@ -385,11 +388,11 @@ def test_encode_string():
     equal(msg, res)
 
 
-def test_decode_repeated():
-    data = '\x08\n*\x02\x08\n*\x02\x08\x14'
+def test_decode_embedded_repeated():
+    data = '\x08\x1e*\x02\x08\n*\x02\x08\x14'
     msg = encoder.decode(decoding.bar, data)
     want = dict([
-      ('bar_id', 10),
+      ('bar_id', 30),
       ('foos', [
         dict([('foo_id', 10)]),
         dict([('foo_id', 20)]),
@@ -398,10 +401,10 @@ def test_decode_repeated():
     equal(want, msg)
 
 
-def test_encode_repeated():
+def test_encode_embedded_repeated():
     # Don't check against data string since encoder doesn't use OrderedDict
     msg = dict([
-      ('bar_id', 10),
+      ('bar_id', 30),
       ('foos', [
         dict([('foo_id', 10)]),
         dict([('foo_id', 20)]),
