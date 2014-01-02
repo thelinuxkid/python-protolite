@@ -92,6 +92,11 @@ class decoding(object):
             ('name', 'sna_ids'),
             ('scope', 'repeated'),
         ])),
+        (2, dict([
+            ('type', 'double'),
+            ('name', 'snas'),
+            ('scope', 'repeated'),
+        ])),
     ])
 
 
@@ -182,6 +187,11 @@ class encoding(object):
         ('sna_ids', dict([
             ('type', 'uint64'),
             ('field', 1),
+            ('scope', 'repeated'),
+        ])),
+        ('snas', dict([
+            ('type', 'double'),
+            ('field', 2),
             ('scope', 'repeated'),
         ])),
     ])
@@ -305,6 +315,25 @@ def test_encode_64bit():
     ])
     data = encoder.encode(encoding.bar, msg)
     res = encoder.decode(decoding.bar, data)
+    equal(msg, res)
+
+
+def test_decode_64bit_repeated():
+    data = '\x11\x00\x00\x00\xe0%\x99^\xc0\x11\x8fB\x9a\xf4\xdcZm@'
+    msg = encoder.decode(decoding.sna, data)
+    want = dict([
+        ('snas', [-122.39293670654297, 234.839472104348218943324]),
+    ])
+    equal(want, msg)
+
+
+def test_encode_64bit_repeated():
+    # Don't check against data string since encoder doesn't use OrderedDict
+    msg = dict([
+        ('snas', [-122.39293670654297, 234.839472104348218943324]),
+    ])
+    data = encoder.encode(encoding.sna, msg)
+    res = encoder.decode(decoding.sna, data)
     equal(msg, res)
 
 
