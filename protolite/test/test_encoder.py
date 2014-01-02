@@ -97,6 +97,11 @@ class decoding(object):
             ('name', 'snas'),
             ('scope', 'repeated'),
         ])),
+        (3, dict([
+            ('type', 'float'),
+            ('name', 'foos'),
+            ('scope', 'repeated'),
+        ])),
     ])
 
 
@@ -192,6 +197,11 @@ class encoding(object):
         ('snas', dict([
             ('type', 'double'),
             ('field', 2),
+            ('scope', 'repeated'),
+        ])),
+        ('foos', dict([
+            ('type', 'float'),
+            ('field', 3),
             ('scope', 'repeated'),
         ])),
     ])
@@ -523,4 +533,23 @@ def test_encode_32bit():
     ])
     data = encoder.encode(encoding.bar, msg)
     res = encoder.decode(decoding.bar, data)
+    equal(msg, res)
+
+
+def test_decode_32bit_repeated():
+    data = '\x1d/\xc9\xf4\xc2\x1d\xeb\xe2V?'
+    msg = encoder.decode(decoding.sna, data)
+    want = dict([
+        ('foos', [-122.39293670654297, 0.8393999934196472]),
+    ])
+    equal(want, msg)
+
+
+def test_encode_32bit_repeated():
+    # Don't check against data string since encoder doesn't use OrderedDict
+    msg = dict([
+        ('foos', [-122.39293670654297, 0.8393999934196472]),
+    ])
+    data = encoder.encode(encoding.sna, msg)
+    res = encoder.decode(decoding.sna, data)
     equal(msg, res)
