@@ -9,6 +9,11 @@ class decoding(object):
             ('type', 'string'),
             ('name', 'body'),
         ])),
+        (2, dict([
+            ('type', 'string'),
+            ('name', 'messages'),
+            ('scope', 'repeated'),
+        ])),
     ])
     message_bar = dict([
         (1, dict([
@@ -88,6 +93,11 @@ class encoding(object):
         ('body', dict([
             ('type', 'string'),
             ('field', 1),
+        ])),
+        ('messages', dict([
+            ('type', 'string'),
+            ('field', 2),
+            ('scope', 'repeated'),
         ])),
     ])
     message_bar = dict([
@@ -412,6 +422,26 @@ def test_encode_embedded_repeated():
     ])
     data = encoder.encode(encoding.bar, msg)
     res = encoder.decode(decoding.bar, data)
+    equal(msg, res)
+
+
+def test_decode_string_repeated():
+    data = '\x12\x03bar\x12\x03baz'
+    msg = encoder.decode(decoding.message_foo, data)
+    want = dict([
+      ('messages', ['bar', 'baz']),
+    ])
+    equal(want, msg)
+
+
+def test_encode_string_repeated():
+    # Don't check against data string since encoder doesn't use OrderedDict
+    msg = dict([
+      ('messages', ['bar', 'baz']),
+    ])
+    data = encoder.encode(encoding.message_foo, msg)
+    print repr(data)
+    res = encoder.decode(decoding.message_foo, data)
     equal(msg, res)
 
 
