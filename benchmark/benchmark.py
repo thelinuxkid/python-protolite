@@ -150,7 +150,7 @@ def warm_up():
         stmt=protobuf,
         setup=protobuf_setup,
         repeat=3,
-        number=10**6,
+        number=10**4,
     )
 
 
