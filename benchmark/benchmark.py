@@ -91,6 +91,8 @@ def benchmark():
             number=10**loops,
         )
     loops = 10**loops
+    if loops < 10000:
+        loops = 10000
     repeat = 3
 
     log.info('Running protobuf benchmark...')
