@@ -142,128 +142,254 @@ def _encode(proto, msg):
         field = info['field']
         _type = info['type']
         repeated = info.get('scope') == 'repeated'
-        if not repeated:
-            values = [values]
-        for v in values:
-            if _type in varint_types:
-                # TODO support int32, int64, uint32, sint32, sint64
-                # optimization: avoid function calls to encode_key
-                key = (field << 3) | 0
-                # end optimization
-                # optimization: avoid function calls to encode_varint
-                _next = 1
-                _value = key
-                key = []
-                while _next:
-                    _next = _value >> 7
-                    shift = 128 if _next else 0
-                    part = (_value & 127) | shift
-                    key.append(part)
-                    _value = _next
-                # end optimization
-                if _type == 'bool':
-                    v = int(v)
-                # optimization: avoid function calls to encode_varint
-                _next = 1
-                _value = v
-                values = []
-                while _next:
-                    _next = _value >> 7
-                    shift = 128 if _next else 0
-                    part = (_value & 127) | shift
-                    values.append(part)
-                    _value = _next
-                data += key + values
-                continue
-            if _type in _64bit_types:
-                # optimization: avoid function calls to encode_key
-                key = (field << 3) | 1
-                # end optimization
-                # optimization: avoid function calls to encode_varint
-                _next = 1
-                _value = key
-                key = []
-                while _next:
-                    _next = _value >> 7
-                    shift = 128 if _next else 0
-                    part = (_value & 127) | shift
-                    key.append(part)
-                    _value = _next
-                # end optimization
-                fmt = struct_formats[_type]
-                # optimization: avoid function call to encode_struct
-                value = [ord(b) for b in struct.pack(fmt, v)]
-                # end optimization
-                data += key + value
-                continue
-            if _type in delimited_types:
-                # TODO support bytes and packed repeated fields
-                # optimization: avoid function calls to encode_key
-                key = (field << 3) | 2
-                # end optimization
-                # optimization: avoid function calls to encode_varint
-                _next = 1
-                _value = key
-                key = []
-                while _next:
-                    _next = _value >> 7
-                    shift = 128 if _next else 0
-                    part = (_value & 127) | shift
-                    key.append(part)
-                    _value = _next
-                # end optimization
-                if _type == 'embedded':
-                    value = _encode(info['message'], v)
-                    length = len(value)
+        if _type in varint_types:
+            if repeated:
+                for v in values:
+                    # TODO support int32, int64, uint32, sint32, sint64
+                    # optimization: avoid function calls to encode_key
+                    key = (field << 3) | 0
+                    # end optimization
                     # optimization: avoid function calls to encode_varint
                     _next = 1
-                    _value = length
-                    length = []
+                    _value = key
+                    key = []
                     while _next:
                         _next = _value >> 7
                         shift = 128 if _next else 0
                         part = (_value & 127) | shift
-                        length.append(part)
+                        key.append(part)
                         _value = _next
                     # end optimization
-                    data += key + length + value
-                if _type == 'string':
-                    # optimization: avoid function calls to encode_delimited
-                    length = len(v)
+                    if _type == 'bool':
+                        v = int(v)
                     # optimization: avoid function calls to encode_varint
                     _next = 1
-                    _value = length
-                    length = []
+                    _value = v
+                    values = []
                     while _next:
                         _next = _value >> 7
                         shift = 128 if _next else 0
                         part = (_value & 127) | shift
-                        length.append(part)
+                        values.append(part)
+                        _value = _next
+                    data += key + values
+                continue
+            v = values
+            # TODO support int32, int64, uint32, sint32, sint64
+            # optimization: avoid function calls to encode_key
+            key = (field << 3) | 0
+            # end optimization
+            # optimization: avoid function calls to encode_varint
+            _next = 1
+            _value = key
+            key = []
+            while _next:
+                _next = _value >> 7
+                shift = 128 if _next else 0
+                part = (_value & 127) | shift
+                key.append(part)
+                _value = _next
+            # end optimization
+            if _type == 'bool':
+                v = int(v)
+            # optimization: avoid function calls to encode_varint
+            _next = 1
+            _value = v
+            values = []
+            while _next:
+                _next = _value >> 7
+                shift = 128 if _next else 0
+                part = (_value & 127) | shift
+                values.append(part)
+                _value = _next
+            data += key + values
+            continue
+        if _type in _64bit_types:
+            if repeated:
+                for v in values:
+                    # optimization: avoid function calls to encode_key
+                    key = (field << 3) | 1
+                    # end optimization
+                    # optimization: avoid function calls to encode_varint
+                    _next = 1
+                    _value = key
+                    key = []
+                    while _next:
+                        _next = _value >> 7
+                        shift = 128 if _next else 0
+                        part = (_value & 127) | shift
+                        key.append(part)
                         _value = _next
                     # end optimization
-                    value = [ord(i) for i in v]
-                    data += key + length + value
+                    fmt = struct_formats[_type]
+                    # optimization: avoid function call to encode_struct
+                    value = [ord(b) for b in struct.pack(fmt, v)]
                     # end optimization
+                    data += key + value
                 continue
-            if _type in _32bit_types:
-                # optimization: avoid function calls to encode_key
-                key = (field << 3) | 5
-                # end optimization
+            v = values
+            # optimization: avoid function calls to encode_key
+            key = (field << 3) | 1
+            # end optimization
+            # optimization: avoid function calls to encode_varint
+            _next = 1
+            _value = key
+            key = []
+            while _next:
+                _next = _value >> 7
+                shift = 128 if _next else 0
+                part = (_value & 127) | shift
+                key.append(part)
+                _value = _next
+            # end optimization
+            fmt = struct_formats[_type]
+            # optimization: avoid function call to encode_struct
+            value = [ord(b) for b in struct.pack(fmt, v)]
+            # end optimization
+            data += key + value
+            continue
+        if _type in delimited_types:
+            if repeated:
+                for v in values:
+                    # TODO support bytes and packed repeated fields
+                    # optimization: avoid function calls to encode_key
+                    key = (field << 3) | 2
+                    # end optimization
+                    # optimization: avoid function calls to encode_varint
+                    _next = 1
+                    _value = key
+                    key = []
+                    while _next:
+                        _next = _value >> 7
+                        shift = 128 if _next else 0
+                        part = (_value & 127) | shift
+                        key.append(part)
+                        _value = _next
+                    # end optimization
+                    if _type == 'embedded':
+                        value = _encode(info['message'], v)
+                        length = len(value)
+                        # optimization: avoid function calls to encode_varint
+                        _next = 1
+                        _value = length
+                        length = []
+                        while _next:
+                            _next = _value >> 7
+                            shift = 128 if _next else 0
+                            part = (_value & 127) | shift
+                            length.append(part)
+                            _value = _next
+                        # end optimization
+                        data += key + length + value
+                    if _type == 'string':
+                        # optimization: avoid function calls to encode_delimited
+                        length = len(v)
+                        # optimization: avoid function calls to encode_varint
+                        _next = 1
+                        _value = length
+                        length = []
+                        while _next:
+                            _next = _value >> 7
+                            shift = 128 if _next else 0
+                            part = (_value & 127) | shift
+                            length.append(part)
+                            _value = _next
+                        # end optimization
+                        value = [ord(i) for i in v]
+                        data += key + length + value
+                        # end optimization
+                continue
+            v = values
+            # TODO support bytes and packed repeated fields
+            # optimization: avoid function calls to encode_key
+            key = (field << 3) | 2
+            # end optimization
+            # optimization: avoid function calls to encode_varint
+            _next = 1
+            _value = key
+            key = []
+            while _next:
+                _next = _value >> 7
+                shift = 128 if _next else 0
+                part = (_value & 127) | shift
+                key.append(part)
+                _value = _next
+            # end optimization
+            if _type == 'embedded':
+                value = _encode(info['message'], v)
+                length = len(value)
                 # optimization: avoid function calls to encode_varint
                 _next = 1
-                _value = key
-                key = []
+                _value = length
+                length = []
                 while _next:
                     _next = _value >> 7
                     shift = 128 if _next else 0
                     part = (_value & 127) | shift
-                    key.append(part)
+                    length.append(part)
                     _value = _next
                 # end optimization
-                fmt = struct_formats[_type]
-                # optimization: avoid function call to encode_struct
-                value = [ord(b) for b in struct.pack(fmt, v)]
+                data += key + length + value
+            if _type == 'string':
+                # optimization: avoid function calls to encode_delimited
+                length = len(v)
+                # optimization: avoid function calls to encode_varint
+                _next = 1
+                _value = length
+                length = []
+                while _next:
+                    _next = _value >> 7
+                    shift = 128 if _next else 0
+                    part = (_value & 127) | shift
+                    length.append(part)
+                    _value = _next
                 # end optimization
-                data += key + value
+                value = [ord(i) for i in v]
+                data += key + length + value
+                # end optimization
+            continue
+        if _type in _32bit_types:
+            if repeated:
+                for v in values:
+                    # optimization: avoid function calls to encode_key
+                    key = (field << 3) | 5
+                    # end optimization
+                    # optimization: avoid function calls to encode_varint
+                    _next = 1
+                    _value = key
+                    key = []
+                    while _next:
+                        _next = _value >> 7
+                        shift = 128 if _next else 0
+                        part = (_value & 127) | shift
+                        key.append(part)
+                        _value = _next
+                    # end optimization
+                    fmt = struct_formats[_type]
+                    # optimization: avoid function call to encode_struct
+                    value = [ord(b) for b in struct.pack(fmt, v)]
+                    # end optimization
+                    data += key + value
                 continue
+            v = values
+            # optimization: avoid function calls to encode_key
+            key = (field << 3) | 5
+            # end optimization
+            # optimization: avoid function calls to encode_varint
+            _next = 1
+            _value = key
+            key = []
+            while _next:
+                _next = _value >> 7
+                shift = 128 if _next else 0
+                part = (_value & 127) | shift
+                key.append(part)
+                _value = _next
+            # end optimization
+            fmt = struct_formats[_type]
+            # optimization: avoid function call to encode_struct
+            value = [ord(b) for b in struct.pack(fmt, v)]
+            # end optimization
+            data += key + value
+            continue
     return data
