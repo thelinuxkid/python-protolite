@@ -51,7 +51,7 @@ def _decode(proto, data):
             continue
         info = proto[field]
         _type = info['type']
-        repeated = info.get('scope') == 'repeated'
+        repeated = info['scope'] == 'repeated'
         name = info['name']
         if repeated and name not in msg:
             msg[name] = list()
@@ -150,7 +150,7 @@ def _encode(proto, msg):
         info = proto[k]
         field = info['field']
         _type = info['type']
-        repeated = info.get('scope') == 'repeated'
+        repeated = info['scope'] == 'repeated'
         if _type in varint_types:
             if repeated:
                 for v in values:

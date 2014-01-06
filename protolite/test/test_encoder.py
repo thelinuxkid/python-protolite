@@ -8,6 +8,7 @@ class decoding(object):
         (1, dict([
             ('type', 'string'),
             ('name', 'body'),
+            ('scope', 'optional'),
         ])),
         (2, dict([
             ('type', 'string'),
@@ -19,11 +20,13 @@ class decoding(object):
         (1, dict([
             ('type', 'enum'),
             ('name', 'type'),
+            ('scope', 'optional'),
         ])),
         (4, dict([
             ('type', 'embedded'),
             ('name', 'message_foo'),
             ('message', message_foo),
+            ('scope', 'optional'),
         ])),
     ])
     message_baz = dict([
@@ -31,53 +34,64 @@ class decoding(object):
             ('type', 'embedded'),
             ('name', 'message_bar'),
             ('message', message_bar),
+            ('scope', 'optional'),
         ])),
         (3, dict([
             ('type', 'uint64'),
             ('name', 'baz_id'),
+            ('scope', 'optional'),
         ])),
     ])
     message_sna = dict([
         (1, dict([
             ('type', 'enum'),
             ('name', 'type'),
+            ('scope', 'optional'),
         ])),
         (8, dict([
             ('type', 'embedded'),
             ('name', 'message_baz'),
             ('message', message_baz),
+            ('scope', 'optional'),
         ])),
     ])
     foo = dict([
         (1, dict([
             ('type', 'uint64'),
             ('name', 'foo_id'),
+            ('scope', 'optional'),
         ])),
         (2, dict([
             ('type', 'bool'),
             ('name', 'is_foo'),
+            ('scope', 'optional'),
         ])),
         (3, dict([
             ('type', 'uint32'),
             ('name', 'foo_count'),
+            ('scope', 'optional'),
         ])),
         (305, dict([
             ('type', 'int32'),
             ('name', 'foo_value'),
+            ('scope', 'optional'),
         ])),
     ])
     bar = dict([
         (1, dict([
             ('type', 'uint64'),
             ('name', 'bar_id'),
+            ('scope', 'optional'),
         ])),
         (2, dict([
             ('type', 'float'),
             ('name', 'bar_value'),
+            ('scope', 'optional'),
         ])),
         (3, dict([
             ('type', 'double'),
             ('name', 'bar_result'),
+            ('scope', 'optional'),
         ])),
         (5, dict([
             ('type', 'embedded'),
@@ -110,6 +124,7 @@ class encoding(object):
         ('body', dict([
             ('type', 'string'),
             ('field', 1),
+            ('scope', 'optional'),
         ])),
         ('messages', dict([
             ('type', 'string'),
@@ -121,11 +136,13 @@ class encoding(object):
         ('type', dict([
             ('type', 'enum'),
             ('field', 1),
+            ('scope', 'optional'),
         ])),
         ('message_foo', dict([
             ('type', 'embedded'),
             ('field', 4),
             ('message', message_foo),
+            ('scope', 'optional'),
         ])),
     ])
     message_baz = dict([
@@ -133,42 +150,51 @@ class encoding(object):
             ('type', 'embedded'),
             ('field', 1),
             ('message', message_bar),
+            ('scope', 'optional'),
         ])),
         ('baz_id', dict([
             ('type', 'uint64'),
             ('field', 3),
+            ('scope', 'optional'),
         ])),
     ])
     foo = dict([
         ('foo_id', dict([
             ('type', 'uint64'),
             ('field', 1),
+            ('scope', 'optional'),
         ])),
         ('is_foo', dict([
             ('type', 'bool'),
             ('field', 2),
+            ('scope', 'optional'),
         ])),
         ('foo_count', dict([
             ('type', 'uint32'),
             ('field', 3),
+            ('scope', 'optional'),
         ])),
         ('foo_value', dict([
             ('type', 'int32'),
             ('field', 305),
+            ('scope', 'optional'),
         ])),
     ])
     bar = dict([
         ('bar_id', dict([
             ('type', 'uint64'),
             ('field', 1),
+            ('scope', 'optional'),
         ])),
         ('bar_value', dict([
             ('type', 'float'),
             ('field', 2),
+            ('scope', 'optional'),
         ])),
         ('bar_result', dict([
             ('type', 'double'),
             ('field', 3),
+            ('scope', 'optional'),
         ])),
         ('foos', dict([
             ('type', 'embedded'),
@@ -181,11 +207,13 @@ class encoding(object):
         ('type', dict([
             ('type', 'enum'),
             ('field', 1),
+            ('scope', 'optional'),
         ])),
         ('message_baz', dict([
             ('type', 'embedded'),
             ('field', 8),
             ('message', message_baz),
+            ('scope', 'optional'),
         ])),
     ])
     sna = dict([
@@ -352,6 +380,7 @@ def test_decode_delimited_length_as_varint():
         (1, dict([
             ('type', 'string'),
             ('name', 'first_name'),
+            ('scope', 'optional'),
         ])),
     ])
     dec_proto = dict([
@@ -359,6 +388,7 @@ def test_decode_delimited_length_as_varint():
             ('type', 'embedded'),
             ('name', 'dec_message'),
             ('message', dec_message),
+            ('scope', 'optional'),
         ])),
     ])
     data = '\x8a\x13\xcf\t'
@@ -382,12 +412,14 @@ def test_encode_delimited_length_as_varint():
         enc_message[c] = dict([
             ('type', 'string'),
             ('field', i),
+            ('scope', 'optional'),
         ])
     enc_proto = dict([
         ('message_foo', dict([
             ('type', 'embedded'),
             ('field', 305),
             ('message', enc_message),
+            ('scope', 'optional'),
         ])),
     ])
     dec_message = dict()
@@ -395,12 +427,14 @@ def test_encode_delimited_length_as_varint():
         dec_message[i] = dict([
             ('type', 'string'),
             ('name', c),
+            ('scope', 'optional'),
         ])
     dec_proto = dict([
         (305, dict([
             ('type', 'embedded'),
             ('name', 'message_foo'),
             ('message', dec_message),
+            ('scope', 'optional'),
         ])),
     ])
     msg = dict()
