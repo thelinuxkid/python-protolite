@@ -10,55 +10,67 @@ class decoding(object):
     phone_number = {
         1: {
                 "name": "country_code",
-                "type": "uint32"
+                "type": "uint32",
+                "scope": "optional"
         },
         2: {
                 "name": "number",
-                "type": "string"
+                "type": "string",
+                "scope": "optional"
         }
 }
     us_address = {
         1: {
                 "name": "street",
-                "type": "string"
+                "type": "string",
+                "scope": "optional"
         },
         2: {
                 "name": "city",
-                "type": "string"
+                "type": "string",
+                "scope": "optional"
         },
         3: {
                 "name": "state",
-                "type": "string"
+                "type": "string",
+                "scope": "optional"
         },
         4: {
                 "name": "zip_code",
-                "type": "string"
+                "type": "string",
+                "scope": "optional"
         },
         5: {
                 "name": "country",
-                "type": "string"
+                "type": "string",
+                "scope": "optional"
         }
 }
     user = {
         1: {
                 "name": "user_id",
-                "type": "uint64"
+                "type": "uint64",
+                "scope": "optional"
         },
         2: {
                 "name": "first_name",
-                "type": "string"
+                "type": "string",
+                "scope": "optional"
         },
         3: {
                 "name": "last_name",
-                "type": "string"
+                "type": "string",
+                "scope": "optional"
         },
         4: {
                 "name": "user_type",
-                "type": "enum"
+                "type": "enum",
+                "scope": "optional"
         },
         5: {
                 "name": "home_address",
-                "type": "embedded"
+                "type": "embedded",
+                "scope": "optional"
         },
         6: {
                 "name": "phone_numbers",
@@ -72,54 +84,66 @@ class encoding(object):
     phone_number = {
         "country_code": {
                 "type": "uint32",
+                "scope": "optional",
                 "field": 1
         },
         "number": {
                 "type": "string",
+                "scope": "optional",
                 "field": 2
         }
 }
     us_address = {
         "street": {
                 "type": "string",
+                "scope": "optional",
                 "field": 1
         },
         "city": {
                 "type": "string",
+                "scope": "optional",
                 "field": 2
         },
         "state": {
                 "type": "string",
+                "scope": "optional",
                 "field": 3
         },
         "zip_code": {
                 "type": "string",
+                "scope": "optional",
                 "field": 4
         },
         "country": {
                 "type": "string",
+                "scope": "optional",
                 "field": 5
         }
 }
     user = {
         "user_id": {
                 "type": "uint64",
+                "scope": "optional",
                 "field": 1
         },
         "first_name": {
                 "type": "string",
+                "scope": "optional",
                 "field": 2
         },
         "last_name": {
                 "type": "string",
+                "scope": "optional",
                 "field": 3
         },
         "user_type": {
                 "type": "enum",
+                "scope": "optional",
                 "field": 4
         },
         "home_address": {
                 "type": "embedded",
+                "scope": "optional",
                 "field": 5
         },
         "phone_numbers": {
