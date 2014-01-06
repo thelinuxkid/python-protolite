@@ -139,9 +139,7 @@ def _parse(tree):
         field_number = int(field_number.getText())
         fields['name'] = field_name.getText()
         fields['type'] = field_type.getText()
-        # TODO handle other scopes
-        if scope.getText() == 'repeated':
-            fields['scope'] = scope.getText()
+        fields['scope'] = scope.getText()
         if field_type.getType() == proto_parser.IDENTIFIER:
             _tree = tree.getParent()
             fields['message'] = fields['type']
