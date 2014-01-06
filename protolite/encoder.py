@@ -1,4 +1,3 @@
-import collections
 import struct
 
 varint_types = [
@@ -33,7 +32,7 @@ def decode(proto, data):
 def _decode(proto, data):
     index = 0
     length = len(data)
-    msg = collections.defaultdict(list)
+    msg = dict()
     while index < length:
         # optimization: avoid function calls to decode_varint, decode_key
         item = 128
@@ -54,6 +53,8 @@ def _decode(proto, data):
         _type = info['type']
         repeated = info.get('scope') == 'repeated'
         name = info['name']
+        if repeated and name not in msg:
+            msg[name] = list()
         if wire == 0:
             # TODO support int32, int64, uint32, sint32, sint64
             # optimization: avoid function call to decode_varint
@@ -69,9 +70,10 @@ def _decode(proto, data):
             # end optimization
             if _type == 'bool':
                 num = bool(num)
-            msg[name].append(num)
-            if not repeated:
-                msg[name] = num
+            if repeated:
+                msg[name].append(num)
+                continue
+            msg[name] = num
             continue
         if wire == 1:
             fmt = struct_formats[_type]
@@ -82,9 +84,10 @@ def _decode(proto, data):
             values = joinstr(values)
             num = struct.unpack(fmt, values)
             # end optimization
-            msg[name].append(num[0])
-            if not repeated:
-                msg[name] = num[0]
+            if repeated:
+                msg[name].append(num[0])
+                continue
+            msg[name] = num[0]
             continue
         if wire == 2:
             # TODO support bytes and packed repeated fields
@@ -104,10 +107,15 @@ def _decode(proto, data):
             # end optimization
             if _type == 'embedded':
                 item = _decode(info['message'], item)
+                if repeated:
+                    msg[name].append(item)
+                    continue
+                msg[name] = item
             if _type == 'string':
                 item = joinstr([chr(i) for i in item])
-            msg[name].append(item)
-            if not repeated:
+                if repeated:
+                    msg[name].append(item)
+                    continue
                 msg[name] = item
             continue
         if wire == 5:
@@ -119,9 +127,10 @@ def _decode(proto, data):
             values = ''.join(values)
             num = struct.unpack(fmt, values)
             # end optimization
-            msg[name].append(num[0])
-            if not repeated:
-                msg[name] = num[0]
+            if repeated:
+                msg[name].append(num[0])
+                continue
+            msg[name] = num[0]
             continue
         raise ValueError(
           'invalid wire type: {wire}'.format(wire=wire)
