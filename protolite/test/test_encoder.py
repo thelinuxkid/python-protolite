@@ -1,5 +1,3 @@
-from nose.tools import eq_ as equal
-
 from protolite import encoder
 
 
@@ -241,7 +239,7 @@ def test_decode_key_as_varint():
     want = dict([
         ('foo_value', 8),
     ])
-    equal(want, msg)
+    assert want == msg
 
 
 def test_encode_key_as_varint():
@@ -251,14 +249,14 @@ def test_encode_key_as_varint():
     ])
     data = encoder.encode(encoding.foo, msg)
     res = encoder.decode(decoding.foo, data)
-    equal(msg, res)
+    assert msg == res
 
 
 def test_decode_int32():
     data= '\x18\x7f'
     msg = encoder.decode(decoding.foo, data)
     want = dict([('foo_count', 127)])
-    equal(want, msg)
+    assert want == msg
 
 
 def test_encode_int32():
@@ -266,7 +264,7 @@ def test_encode_int32():
     msg = dict([('foo_count', 127)])
     data = encoder.encode(encoding.foo, msg)
     res = encoder.decode(decoding.foo, data)
-    equal(msg, res)
+    assert msg == res
 
 
 def test_decode_uint64():
@@ -275,7 +273,7 @@ def test_decode_uint64():
     want = dict([
         ('bar_id', 1007843487950966784L),
     ])
-    equal(want, msg)
+    assert want == msg
 
 
 def test_encode_uint64():
@@ -285,14 +283,14 @@ def test_encode_uint64():
     ])
     data = encoder.encode(encoding.bar, msg)
     res = encoder.decode(decoding.bar, data)
-    equal(msg, res)
+    assert msg == res
 
 
 def test_decode_bool():
     data = '\x10\x00'
     msg = encoder.decode(decoding.foo, data)
     want = dict([('is_foo', False)])
-    equal(want, msg)
+    assert want == msg
 
 
 def test_encode_bool():
@@ -300,14 +298,14 @@ def test_encode_bool():
     msg = dict([('is_foo', False)])
     data = encoder.encode(encoding.foo, msg)
     res = encoder.decode(decoding.foo, data)
-    equal(msg, res)
+    assert msg == res
 
 
 def test_decode_enum():
     data = '\x08\x07'
     msg = encoder.decode(decoding.message_bar, data)
     want = dict([('type', 7)])
-    equal(want, msg)
+    assert want == msg
 
 
 def test_encode_enum():
@@ -315,7 +313,7 @@ def test_encode_enum():
     msg = dict([('type', 7)])
     data = encoder.encode(encoding.message_bar, msg)
     res = encoder.decode(decoding.message_bar, data)
-    equal(msg, res)
+    assert msg == res
 
 
 def test_decode_repeated_varint():
@@ -324,7 +322,7 @@ def test_decode_repeated_varint():
     want = dict([
       ('sna_ids', [10, 20]),
     ])
-    equal(want, msg)
+    assert want == msg
 
 
 def test_encode_repeated_varint():
@@ -334,7 +332,7 @@ def test_encode_repeated_varint():
     ])
     data = encoder.encode(encoding.sna, msg)
     res = encoder.decode(decoding.sna, data)
-    equal(msg, res)
+    assert msg == res
 
 
 def test_decode_64bit():
@@ -343,7 +341,7 @@ def test_decode_64bit():
     want = dict([
         ('bar_result', -122.39293670654297),
     ])
-    equal(want, msg)
+    assert want == msg
 
 
 def test_encode_64bit():
@@ -353,7 +351,7 @@ def test_encode_64bit():
     ])
     data = encoder.encode(encoding.bar, msg)
     res = encoder.decode(decoding.bar, data)
-    equal(msg, res)
+    assert msg == res
 
 
 def test_decode_64bit_repeated():
@@ -362,7 +360,7 @@ def test_decode_64bit_repeated():
     want = dict([
         ('snas', [-122.39293670654297, 234.839472104348218943324]),
     ])
-    equal(want, msg)
+    assert want == msg
 
 
 def test_encode_64bit_repeated():
@@ -372,7 +370,7 @@ def test_encode_64bit_repeated():
     ])
     data = encoder.encode(encoding.sna, msg)
     res = encoder.decode(decoding.sna, data)
-    equal(msg, res)
+    assert msg == res
 
 
 def test_decode_delimited_length_as_varint():
@@ -397,7 +395,7 @@ def test_decode_delimited_length_as_varint():
     want = dict([
         ('dec_message', dict()),
     ])
-    equal(want, msg)
+    assert want == msg
 
 
 def test_encode_delimited_length_as_varint():
@@ -445,7 +443,7 @@ def test_encode_delimited_length_as_varint():
     ])
     data = encoder.encode(enc_proto, msg)
     res = encoder.decode(dec_proto, data)
-    equal(msg, res)
+    assert msg == res
 
 
 def test_decode_embedded():
@@ -463,7 +461,7 @@ def test_decode_embedded():
         ])),
         ('type', 8),
     ])
-    equal(want, msg)
+    assert want == msg
 
 
 def test_encode_embedded():
@@ -482,7 +480,7 @@ def test_encode_embedded():
     ])
     data = encoder.encode(encoding.message_sna, msg)
     res = encoder.decode(decoding.message_sna, data)
-    equal(msg, res)
+    assert msg == res
 
 
 def test_decode_string():
@@ -491,7 +489,7 @@ def test_decode_string():
     want = dict([
       ('body', 'hello world'),
     ])
-    equal(want, msg)
+    assert want == msg
 
 
 def test_encode_string():
@@ -501,7 +499,7 @@ def test_encode_string():
     ])
     data = encoder.encode(encoding.message_foo, msg)
     res = encoder.decode(decoding.message_foo, data)
-    equal(msg, res)
+    assert msg == res
 
 
 def test_decode_embedded_repeated():
@@ -514,7 +512,7 @@ def test_decode_embedded_repeated():
         dict([('foo_id', 20)]),
       ]),
     ])
-    equal(want, msg)
+    assert want == msg
 
 
 def test_encode_embedded_repeated():
@@ -528,7 +526,7 @@ def test_encode_embedded_repeated():
     ])
     data = encoder.encode(encoding.bar, msg)
     res = encoder.decode(decoding.bar, data)
-    equal(msg, res)
+    assert msg == res
 
 
 def test_decode_string_repeated():
@@ -537,7 +535,7 @@ def test_decode_string_repeated():
     want = dict([
       ('messages', ['bar', 'baz']),
     ])
-    equal(want, msg)
+    assert want == msg
 
 
 def test_encode_string_repeated():
@@ -548,7 +546,7 @@ def test_encode_string_repeated():
     data = encoder.encode(encoding.message_foo, msg)
     print repr(data)
     res = encoder.decode(decoding.message_foo, data)
-    equal(msg, res)
+    assert msg == res
 
 
 def test_decode_32bit():
@@ -557,7 +555,7 @@ def test_decode_32bit():
     want = dict([
         ('bar_value', -122.39293670654297),
     ])
-    equal(want, msg)
+    assert want == msg
 
 
 def test_encode_32bit():
@@ -567,7 +565,7 @@ def test_encode_32bit():
     ])
     data = encoder.encode(encoding.bar, msg)
     res = encoder.decode(decoding.bar, data)
-    equal(msg, res)
+    assert msg == res
 
 
 def test_decode_32bit_repeated():
@@ -576,7 +574,7 @@ def test_decode_32bit_repeated():
     want = dict([
         ('foos', [-122.39293670654297, 0.8393999934196472]),
     ])
-    equal(want, msg)
+    assert want == msg
 
 
 def test_encode_32bit_repeated():
@@ -586,4 +584,4 @@ def test_encode_32bit_repeated():
     ])
     data = encoder.encode(encoding.sna, msg)
     res = encoder.decode(decoding.sna, data)
-    equal(msg, res)
+    assert msg == res

@@ -1,6 +1,22 @@
-#!/usr/bin/python
-from setuptools import setup, find_packages
+import sys
 import os
+
+from setuptools import setup, find_packages
+from setuptools.command.test import test as TestCommand
+
+
+class PyTest(TestCommand):
+    def finalize_options(self):
+        TestCommand.finalize_options(self)
+        self.test_args = []
+        self.test_suite = True
+
+    def run_tests(self):
+        #import here, cause outside the eggs aren't loaded
+        import pytest
+        errno = pytest.main(self.test_args)
+        sys.exit(errno)
+
 
 EXTRAS_REQUIRES = dict(
     parser=[
@@ -9,7 +25,7 @@ EXTRAS_REQUIRES = dict(
         'antlr_python_runtime==3.1.3',
     ],
     test=[
-        'nose>=1.3.0',
+        'pytest>=2.5.1',
         ],
     dev=[
         'ipython>=1.1.0',
@@ -41,8 +57,9 @@ setup(
     maintainer_email='andy@littleinc.com',
     url='https://github.com/littleinc/python-protolite',
     license='MIT',
-    packages = find_packages(),
-    test_suite='nose.collector',
+    packages=find_packages(),
+    cmdclass=dict([('test', PyTest)]),
+    tests_require=['pytest>=2.5.1'],
     install_requires=[
         'setuptools',
         ],
