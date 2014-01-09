@@ -1,3 +1,5 @@
+import pytest
+
 from protolite import encoder
 
 
@@ -112,6 +114,11 @@ class decoding(object):
         (3, dict([
             ('type', 'float'),
             ('name', 'foos'),
+            ('scope', 'repeated'),
+        ])),
+        (4, dict([
+            ('type', 'uint32'),
+            ('name', 'counts'),
             ('scope', 'repeated'),
         ])),
     ])
@@ -230,6 +237,11 @@ class encoding(object):
             ('field', 3),
             ('scope', 'repeated'),
         ])),
+        ('counts', dict([
+            ('type', 'uint32'),
+            ('field', 4),
+            ('scope', 'repeated'),
+        ])),
     ])
 
 
@@ -286,6 +298,16 @@ def test_encode_uint64():
     assert msg == res
 
 
+def test_encode_uint64_negative():
+    with pytest.raises(ValueError) as einfo:
+        msg = dict([
+            ('bar_id', -155496620801056360),
+        ])
+        encoder.encode(encoding.bar, msg)
+    want = 'ValueError: uint64 value cannot be negative: -155496620801056360'
+    assert einfo.exconly() == want
+
+
 def test_decode_bool():
     data = '\x10\x00'
     msg = encoder.decode(decoding.foo, data)
@@ -333,6 +355,16 @@ def test_encode_repeated_varint():
     data = encoder.encode(encoding.sna, msg)
     res = encoder.decode(decoding.sna, data)
     assert msg == res
+
+
+def test_encode_repeated_uint_negative():
+    with pytest.raises(ValueError) as einfo:
+        msg = dict([
+            ('counts', [1, -2, 3]),
+        ])
+        encoder.encode(encoding.sna, msg)
+    want = 'ValueError: uint32 value cannot be negative: -2'
+    assert einfo.exconly() == want
 
 
 def test_decode_64bit():
@@ -544,7 +576,6 @@ def test_encode_string_repeated():
       ('messages', ['bar', 'baz']),
     ])
     data = encoder.encode(encoding.message_foo, msg)
-    print repr(data)
     res = encoder.decode(decoding.message_foo, data)
     assert msg == res
 

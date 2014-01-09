@@ -10,6 +10,10 @@ varint_types = [
   'bool',
   'enum',
 ]
+unsigned_varint_types = [
+  'uint32',
+  'uint64',
+]
 _64bit_types = ['fixed64', 'sfixed64', 'double']
 delimited_types = ['string', 'bytes', 'embedded', 'packed']
 _32bit_types = ['fixed32', 'sfixed32', 'float']
@@ -154,6 +158,13 @@ def _encode(proto, msg):
         if _type in varint_types:
             if repeated:
                 for v in values:
+                    if _type in unsigned_varint_types and v < 0:
+                        raise ValueError(
+                            '{_type} value cannot be negative: {v}'.format(
+                                _type=_type,
+                                v=v,
+                            )
+                        )
                     # TODO support int32, int64, uint32, sint32, sint64
                     # optimization: avoid function calls to encode_key
                     key = (field << 3) | 0
@@ -184,6 +195,13 @@ def _encode(proto, msg):
                     data += key + values
                 continue
             v = values
+            if _type in unsigned_varint_types and v < 0:
+                raise ValueError(
+                    '{_type} value cannot be negative: {v}'.format(
+                        _type=_type,
+                        v=v,
+                    )
+                )
             # TODO support int32, int64, uint32, sint32, sint64
             # optimization: avoid function calls to encode_key
             key = (field << 3) | 0
