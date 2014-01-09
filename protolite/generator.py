@@ -114,7 +114,7 @@ def _parse(tree):
     if tree is None or tree.getType() in ignore_types:
         return None
 
-    children =[]
+    children = []
     for child in tree.getChildren():
         _child = _parse(child)
         if _child:
@@ -146,8 +146,9 @@ def _parse(tree):
             fields['type'] = 'embedded'
             while _tree:
                 for child in _tree.children:
-                    if (child.getType() == proto_parser.ENUM_LITERAL and
-                        child.children[0].getText() == field_type.getText()
+                    if (
+                            child.getType() == proto_parser.ENUM_LITERAL and
+                            child.children[0].getText() == field_type.getText()
                     ):
                         fields['type'] = 'enum'
                 _tree = _tree.getParent()
@@ -254,7 +255,8 @@ def write_references(fp, references, fields, imports, prefixes):
                             break
                     if not depend:
                         raise ValueError(
-                            'attribute is not in any module: {_reference}'.format(
+                            'attribute is not in any module: '
+                            '{_reference}'.format(
                                 _reference=_reference,
                             )
                         )
@@ -284,7 +286,7 @@ def generate(protos, output, prefixes):
         root = root_rule(path)
         attrs, references, enums = parse(root, prefixes)
         fields = attrs['decoding'].keys()
-        depends = dict([(k,v) for k,v in done.items() if k in imports])
+        depends = dict([(k, v) for k, v in done.items() if k in imports])
         path = output_path(path, output)
         with open(path, 'w') as fp:
             _imports = [
@@ -303,7 +305,10 @@ def generate(protos, output, prefixes):
                     value = ''.join(proto_json.iterencode(value, prefixes))
                     field = underscore(field, prefixes=prefixes)
                     fp.write(
-                        '\n    {field} = {value}'.format(field=field, value=value),
+                        '\n    {field} = {value}'.format(
+                            field=field,
+                            value=value,
+                        ),
                     )
                 fp.write('\n\n')
             fp.write(

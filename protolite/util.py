@@ -1,5 +1,6 @@
 import os
 
+
 def abs_path(path):
     path = os.path.expanduser(path)
     path = os.path.abspath(path)

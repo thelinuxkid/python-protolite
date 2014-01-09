@@ -53,7 +53,8 @@ def encode_struct(num, fmt):
 
 
 def encode_varint(num):
-    "return an encoded int32, int64, uint32, uint64, sint32, sint64, bool, or enum"
+    """return an encoded int32, int64, uint32, uint64, sint32, sint64, bool, or
+    enum"""
 
     _next = 1
     values = []
@@ -67,7 +68,8 @@ def encode_varint(num):
 
 
 def encode_delimited(item):
-    "return an encoded string, bytes, embedded messages, or packed repeated fields"
+    """return an encoded string, bytes, embedded messages, or packed repeated
+    fields"""
 
     length = len(item)
     length = encode_varint(length)

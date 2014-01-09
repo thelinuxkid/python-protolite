@@ -265,7 +265,7 @@ def test_encode_key_as_varint():
 
 
 def test_decode_int32():
-    data= '\x18\x7f'
+    data = '\x18\x7f'
     msg = encoder.decode(decoding.foo, data)
     want = dict([('foo_count', 127)])
     assert want == msg
@@ -342,7 +342,7 @@ def test_decode_repeated_varint():
     data = '\x08\n\x08\x14'
     msg = encoder.decode(decoding.sna, data)
     want = dict([
-      ('sna_ids', [10, 20]),
+        ('sna_ids', [10, 20]),
     ])
     assert want == msg
 
@@ -350,7 +350,7 @@ def test_decode_repeated_varint():
 def test_encode_repeated_varint():
     # Don't check against data string since encoder doesn't use OrderedDict
     msg = dict([
-      ('sna_ids', [10, 20]),
+        ('sna_ids', [10, 20]),
     ])
     data = encoder.encode(encoding.sna, msg)
     res = encoder.decode(decoding.sna, data)
@@ -481,7 +481,7 @@ def test_encode_delimited_length_as_varint():
 def test_decode_embedded():
     data = '\x08\x08B\x12\n\r\x08\x04"\t\n\x07foobody\x18\xb9`'
     msg = encoder.decode(decoding.message_sna, data)
-    want =  dict([
+    want = dict([
         ('message_baz', dict([
             ('baz_id', 12345),
             ('message_bar', dict([
@@ -498,7 +498,7 @@ def test_decode_embedded():
 
 def test_encode_embedded():
     # Don't check against data string since encoder doesn't use OrderedDict
-    msg =  dict([
+    msg = dict([
         ('message_baz', dict([
             ('baz_id', 12345),
             ('message_bar', dict([
@@ -519,7 +519,7 @@ def test_decode_string():
     data = '\n\hello world'
     msg = encoder.decode(decoding.message_foo, data)
     want = dict([
-      ('body', 'hello world'),
+        ('body', 'hello world'),
     ])
     assert want == msg
 
@@ -527,7 +527,7 @@ def test_decode_string():
 def test_encode_string():
     # Don't check against data string since protolite doesn't use OrderedDict
     msg = dict([
-      ('body', 'hello world'),
+        ('body', 'hello world'),
     ])
     data = encoder.encode(encoding.message_foo, msg)
     res = encoder.decode(decoding.message_foo, data)
@@ -538,11 +538,11 @@ def test_decode_embedded_repeated():
     data = '\x08\x1e*\x02\x08\n*\x02\x08\x14'
     msg = encoder.decode(decoding.bar, data)
     want = dict([
-      ('bar_id', 30),
-      ('foos', [
-        dict([('foo_id', 10)]),
-        dict([('foo_id', 20)]),
-      ]),
+        ('bar_id', 30),
+        ('foos', [
+            dict([('foo_id', 10)]),
+            dict([('foo_id', 20)]),
+        ]),
     ])
     assert want == msg
 
@@ -550,11 +550,11 @@ def test_decode_embedded_repeated():
 def test_encode_embedded_repeated():
     # Don't check against data string since encoder doesn't use OrderedDict
     msg = dict([
-      ('bar_id', 30),
-      ('foos', [
-        dict([('foo_id', 10)]),
-        dict([('foo_id', 20)]),
-      ]),
+        ('bar_id', 30),
+        ('foos', [
+            dict([('foo_id', 10)]),
+            dict([('foo_id', 20)]),
+        ]),
     ])
     data = encoder.encode(encoding.bar, msg)
     res = encoder.decode(decoding.bar, data)
@@ -565,7 +565,7 @@ def test_decode_string_repeated():
     data = '\x12\x03bar\x12\x03baz'
     msg = encoder.decode(decoding.message_foo, data)
     want = dict([
-      ('messages', ['bar', 'baz']),
+        ('messages', ['bar', 'baz']),
     ])
     assert want == msg
 
@@ -573,7 +573,7 @@ def test_decode_string_repeated():
 def test_encode_string_repeated():
     # Don't check against data string since encoder doesn't use OrderedDict
     msg = dict([
-      ('messages', ['bar', 'baz']),
+        ('messages', ['bar', 'baz']),
     ])
     data = encoder.encode(encoding.message_foo, msg)
     res = encoder.decode(decoding.message_foo, data)

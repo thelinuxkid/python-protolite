@@ -1,18 +1,18 @@
 import struct
 
 varint_types = [
-  'int32',
-  'int64',
-  'uint32',
-  'uint64',
-  'sint32',
-  'sint64',
-  'bool',
-  'enum',
+    'int32',
+    'int64',
+    'uint32',
+    'uint64',
+    'sint32',
+    'sint64',
+    'bool',
+    'enum',
 ]
 unsigned_varint_types = [
-  'uint32',
-  'uint64',
+    'uint32',
+    'uint64',
 ]
 _64bit_types = ['fixed64', 'sfixed64', 'double']
 delimited_types = ['string', 'bytes', 'embedded', 'packed']
@@ -137,7 +137,7 @@ def _decode(proto, data):
             msg[name] = num[0]
             continue
         raise ValueError(
-          'invalid wire type: {wire}'.format(wire=wire)
+            'invalid wire type: {wire}'.format(wire=wire)
         )
     return msg
 
@@ -145,11 +145,11 @@ def _decode(proto, data):
 def encode(proto, msg):
     data = _encode(proto, msg)
     data = [chr(d) for d in data]
-    return  ''.join(data)
+    return ''.join(data)
 
 
 def _encode(proto, msg):
-    data =  []
+    data = []
     for k, values in msg.items():
         info = proto[k]
         field = info['field']
@@ -309,7 +309,8 @@ def _encode(proto, msg):
                         # end optimization
                         data += key + length + value
                     if _type == 'string':
-                        # optimization: avoid function calls to encode_delimited
+                        # optimization: avoid function calls to
+                        # encode_delimited
                         length = len(v)
                         # optimization: avoid function calls to encode_varint
                         _next = 1

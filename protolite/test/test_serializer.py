@@ -8,7 +8,7 @@ def test_decode_key_simple():
 
 
 def test_encode_key_simple():
-    key = serializer.encode_key(1,0)
+    key = serializer.encode_key(1, 0)
     assert 8 == key
 
 
