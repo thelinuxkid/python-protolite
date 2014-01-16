@@ -533,6 +533,13 @@ def test_encode_string():
     res = encoder.decode(decoding.message_foo, data)
     assert msg == res
 
+    msg = dict([
+        ('body', u'\u03b3\u03b5\u03b9\u03b1'),
+    ])
+    data = encoder.encode(encoding.message_foo, msg)
+    res = encoder.decode(decoding.message_foo, data)
+    assert msg == res
+
 
 def test_decode_embedded_repeated():
     data = '\x08\x1e*\x02\x08\n*\x02\x08\x14'
