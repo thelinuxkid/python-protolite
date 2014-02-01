@@ -117,6 +117,8 @@ def _decode(proto, data):
                 msg[name] = item
             if _type == 'string':
                 item = joinstr([chr(i) for i in item])
+                # TODO: need to think through unicode more completely
+                item = item.decode('utf8')
                 if repeated:
                     msg[name].append(item)
                     continue
@@ -327,6 +329,11 @@ def _encode(proto, msg):
                         data += key + length + value
                         # end optimization
                 continue
+
+            # TODO: need to handle unicode more completely
+            if isinstance(values, unicode):
+                values = values.encode('utf8')
+
             v = values
             # TODO support bytes and packed repeated fields
             # optimization: avoid function calls to encode_key
