@@ -20,10 +20,10 @@ Similarly, using Pypy we get about twice the speed::
     protobuf:  0.807873010635376 seconds
     protolite: 0.4414529800415039 seconds
 
-The ``benchmark`` directory in the github_ repository contains the files needed
-to re-run the tests . In addition, you will the protobuf Python_ library. Try it
-on your platform, but, keep your machine as quite as possible so as to not skew
-the results::
+The ``benchmark`` directory in the github_ repository contains the files
+needed to re-run the tests . In addition, you will need the protobuf
+Python_ library. Try it on your platform, but, keep your machine as quite
+as possible so as to not skew the results::
 
     PYTHONPATH=$PYTHONPATH:$(pwd) python benchmark/benchmark.py
 
@@ -62,7 +62,7 @@ You can download and install protolite from pypi_ with pip::
 Alternatively, you can clone the repository containing the source code
 from github_ and install protolite via setuptools::
 
-    git clone https://github.com/littleinc/python-protolite.git
+    git clone https://github.com/thelinuxkid/python-protolite.git
     cd python-protolite
     python setup.py install
 
@@ -159,7 +159,7 @@ version to match the Python runtime version in setup.py.
 
 .. _protobuf:  https://code.google.com/p/protobuf
 .. _pypi: https://pypi.python.org/pypi/python-protolite
-.. _github: https://github.com/littleinc/python-protolite
+.. _github: https://github.com/thelinuxkid/python-protolite
 .. _antlr: http://antlr3.org/
 .. _Python: https://pypi.python.org/pypi/protobuf
 .. _protoc: https://code.google.com/p/protobuf/downloads/list
